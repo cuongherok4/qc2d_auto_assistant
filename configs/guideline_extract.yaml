@@ -1,0 +1,17 @@
+provider: gemini
+model: gemini-3.5-flash-lite
+api_base: https://generativelanguage.googleapis.com/v1beta
+api_key_env: GEMINI_API_KEY
+timeout_seconds: 120
+temperature: 0
+supports_temperature: true
+schema_mode: responseFormat # Current REST format; responseJsonSchema remains configurable for older models.
+max_output_tokens: 16000
+cache_dir: data/cache/guidelines
+drafts_dir: configs/guidelines/drafts
+approved_dir: configs/guidelines
+rule_severity: # Risk policy, not thresholds inferred from the guideline.
+  below_min_height: 0.6
+  class_not_allowed: 1.0
+  missing_attribute: 0.3
+  model_object_missing: 1.0
