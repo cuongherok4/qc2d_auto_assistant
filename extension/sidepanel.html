@@ -1,9 +1,33 @@
 <!doctype html>
 <html lang="vi">
-<head><meta charset="utf-8"><title>M13 Review Queue</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M13 Review</title><link rel="stylesheet" href="sidepanel.css"></head>
 <body>
-  <!-- TODO(Tú Anh): danh sách hàng đợi (rank, điểm, 3 lý do), 3 nút Lỗi thật / Bot nhầm / Bỏ qua (phím 1/2/3) -->
-  <h1>Hàng đợi review</h1>
-  <ul id="queue"></ul>
-</body>
-</html>
+<header><h1>M13 · Review QC 2D</h1><button id="refresh">Tải lại</button></header>
+<details id="settings"><summary>Cài đặt</summary>
+<form id="settings-form">
+<label>API local <input id="api-url" required type="url" value="http://127.0.0.1:8000"></label>
+<label>Reviewer <input id="reviewer" required maxlength="100" autocomplete="name"></label>
+<label>Batch <input id="batch" placeholder="Để trống: queue hiện tại"></label>
+<label>Phiên review <input id="session" value="default" required maxlength="100"></label>
+<label>Thứ tự <select id="order"><option value="priority">Hàng đợi ưu tiên</option><option value="file">Tên file (pilot)</option></select></label>
+<button type="submit">Lưu cài đặt</button></form></details>
+<p id="status" role="status" aria-live="polite">Đang kết nối…</p>
+<p id="error" role="alert" hidden></p>
+<p id="warnings"></p>
+<section id="selected" hidden>
+<h2 id="image-title"></h2><ul id="reasons"></ul>
+<div id="preview"><img id="image" alt="Ảnh đang review"><canvas id="boxes"></canvas></div>
+<p id="image-error" hidden></p>
+<ul id="evidence"></ul>
+<p id="timer">Chưa bắt đầu</p>
+<p class="hint">Sửa và lưu nhãn trong CVAT trước khi ghi kết quả. Verdict lưu riêng, không thay thao tác lưu nhãn.</p>
+<label class="note">Ghi chú (không bắt buộc)<textarea id="note" rows="2" maxlength="10000"></textarea></label>
+<div id="actions"><button data-verdict="error">1 · Lỗi thật</button><button data-verdict="false_alarm">2 · Bot nhầm</button><button data-verdict="skip">3 · Bỏ qua</button></div>
+<button id="retry" hidden>Thử gửi lại verdict</button>
+</section>
+<div class="queue-heading"><h2>Hàng đợi</h2><span id="count"></span></div>
+<ul id="queue"></ul><button id="more" hidden>Xem thêm</button>
+<details><summary>Thống kê phiên</summary><p id="stats">Chưa có dữ liệu</p></details>
+<script src="sidepanel.js"></script>
+</body></html>

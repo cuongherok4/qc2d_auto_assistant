@@ -12,4 +12,3 @@ queue_file: null
 queue_batches: {} # batch_id: reports/ranked_queue_<version>.csv
 evidence_file: null
 retrain_backend: null # module:function; xem docs/tuanh-demo.md
-

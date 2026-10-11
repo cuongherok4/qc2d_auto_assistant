@@ -1,21 +1,12 @@
 {
   "manifest_version": 3,
   "name": "M13 Review Queue",
-  "version": "0.1.0",
-  "description": "Hàng đợi review nhãn ưu tiên theo rủi ro, mở đúng frame trong CVAT",
-  "permissions": [
-    "sidePanel",
-    "storage",
-    "tabs"
-  ],
-  "host_permissions": [
-    "http://127.0.0.1:8000/*",
-    "http://localhost:8080/*"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  }
+  "version": "0.2.0",
+  "description": "Review QC 2D theo hàng đợi, mở CVAT và lưu verdict.",
+  "permissions": ["sidePanel", "storage", "tabs"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_title": "Mở M13 Review"},
+  "side_panel": {"default_path": "sidepanel.html"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'self'"}
 }

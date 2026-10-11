@@ -1,0 +1,17 @@
+# Khảo sát V1 Guideline Assistant · Tú Anh
+
+Đã tìm trong workspace M13, thư mục dự án CVAT trên Ubuntu và tên tài nguyên liên quan trên ổ Windows đang gắn. Chưa xác định được source backend **V1 Guideline Assistant** hoặc quyền truy cập repo V1. Thư mục `cvat-lidar-autoqc` là dự án CVAT/LiDAR; không có cơ sở gọi đây là backend V1 đọc guideline. Người dùng xác nhận đầu vào M13 hiện chưa có, và yêu cầu làm các phần độc lập trước.
+
+Vì vậy chưa thể xác nhận V1 dùng provider/model nào, chạy local hay API, đọc DOCX/PDF ra sao, hoặc tái sử dụng module/extension nào. Không sao chép phần LiDAR vào luồng QC detection 2D. Khi nhận được V1, chỉ cần đối chiếu giao diện backend nhận `pages, JSON schema, config` và trả một JSON object; thay implementation backend mà giữ schema, quote validation, cache và bước duyệt.
+
+Phiên này người dùng chọn **Gemini API**. Đã triển khai REST `generateContent`, model cấu hình trong `configs/guideline_extract.yaml`, API key qua `GEMINI_API_KEY`, JSON Schema sinh từ Pydantic, temperature 0 khi được hỗ trợ, xử lý phản hồi bị chặn/hết token và lỗi HTTP mà không in key. Adapter hỗ trợ `responseJsonSchema` và `responseFormat`. Chưa gọi Gemini thật vì chưa có key trong môi trường; unit test dùng HTTP mock và ba draft phát triển có `provider: fixture`.
+
+PDF được đọc bằng pdfplumber từng trang. DOCX được LibreOffice chuyển sang PDF bằng profile tạm riêng; số trang là trang của bản PDF đã render, không phải số trang suy đoán từ đoạn văn. Draft lưu đường dẫn/hash file gốc, PDF, phiên bản converter; người duyệt mở đúng bản PDF này để đối chiếu. Scan không có text bị từ chối, cần OCR và xác minh riêng. PDF có thay đổi layout/font phải trích lại.
+
+Cache dựa trên hash file/PDF, converter, schema, prompt, provider/model và cấu hình liên quan. Cache không chứa API key. Mỗi giá trị có citation; quote phải tồn tại trên trang được chỉ định (chỉ chuẩn hoá khoảng trắng). Ngưỡng không được thêm default nếu nguồn không ghi; ngưỡng class còn thiếu được ghi vào `unclear`. Đây là kiểm chứng nguồn, không chứng minh LLM đã hiểu chính xác ý nghĩa câu: người duyệt vẫn phải kiểm classes/merge/ngưỡng/attributes và giải quyết unclear. Severity là chính sách rủi ro cấu hình của nhóm, có provenance riêng, không phải nội dung guideline.
+
+Lệnh extract chỉ xuất vào `drafts/`, `approved_by` luôn trống. `guideline approve` đòi tên người duyệt và `--confirm-reviewed`, kiểm lại nguồn/hash/schema/quote trước khi xuất spec. Agent không duyệt ba fixture thay người. Module `load_approved` từ chối bản chưa duyệt; **rule engine của Long còn stub**, nên việc tiếp nhận spec đã duyệt cần ghép ở `src/features/guideline_rules.py`, chưa được tuyên bố hoàn thành. CLI không thể xác minh danh tính người nhập tên; nhóm chịu trách nhiệm review thực tế và PR.
+
+Tài liệu tham chiếu: [Gemini structured output](https://ai.google.dev/gemini-api/docs/generate-content/structured-output), [REST GenerationConfig](https://ai.google.dev/api/generate-content#v1beta.GenerationConfig). Đây là backend mới để gỡ phụ thuộc V1, chưa phải kết luận về implementation V1.
+
+Model mặc định: `gemini-3.5-flash-lite`, schema mode `responseFormat`. Đối chiếu 11/10/2026: Google khuyến nghị 3.5 Flash-Lite/3.8 Flash cho dự án mới vì hạn chế Gemini 2.5 cho người chưa sử dụng trước đó. Có thể đổi model/schema mode trong config; chưa đo chất lượng trên guideline thật. Nguồn: [lịch hỗ trợ Gemini](https://ai.google.dev/gemini-api/docs/deprecations), [model Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite).
