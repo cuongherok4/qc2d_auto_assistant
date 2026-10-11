@@ -5,6 +5,8 @@
     rank      tính tín hiệu + chấm điểm rule -> hàng đợi     (bước 3–4)
     evaluate  đo hàng đợi trên đáp án, ghi results.jsonl     (bước 7)
     check     kiểm file preds/queue đúng quy ước
+    samples   tạo file mẫu đúng quy ước để code khi chưa có dữ liệu thật
+    cvat-sync sinh bảng image_id -> frame từ CVAT local      (bước 5)
 """
 
 from __future__ import annotations
@@ -42,13 +44,13 @@ def cmd_inject(args) -> int:
 
 def cmd_rank(args) -> int:
     from src.data import bdd100k
-    from src.features import geometric
+    from src.features import geometric, simple_signals
     from src.scoring import rule
 
     labels = args.labels or config.path("injected_dir") / "det_val_injected.json"
     objects, images = bdd100k.load(labels)
     signals = {}
-    for name, fn in geometric.SIGNALS.items():
+    for name, fn in {**geometric.SIGNALS, **simple_signals.SIGNALS}.items():
         try:
             signals[name] = fn(objects, images)
         except NotImplementedError as e:
@@ -82,6 +84,34 @@ def cmd_check(args) -> int:
     return 1 if errs else 0
 
 
+def cmd_samples(args) -> int:
+    preds = pd.DataFrame([
+        ["b1c66a42-6f7d68ca", 100.0, 300.0, 260.0, 420.0, "car", 0.91],
+        ["b1c66a42-6f7d68ca", 640.0, 200.0, 660.0, 250.0, "traffic light", 0.55],
+        ["b1c81faa-3df17267", 50.0, 310.0, 90.0, 420.0, "pedestrian", 0.78],
+    ], columns=contracts.PRED_COLS)
+    queue = pd.DataFrame([
+        ["b1c66a42-6f7d68ca", 87.5, 1, "Thiếu car cao 120px, model chắc 0.91 | Ảnh đêm, 23 box", "sample"],
+        ["b1c81faa-3df17267", 12.0, 2, "Ảnh đông 31 box (bách phân vị 92)", "sample"],
+    ], columns=contracts.QUEUE_COLS)
+    preds_p = config.ROOT / "data" / "samples" / "yolo_preds.parquet"
+    queue_p = config.path("reports_dir") / "ranked_queue_sample.csv"
+    preds_p.parent.mkdir(parents=True, exist_ok=True)
+    queue_p.parent.mkdir(parents=True, exist_ok=True)
+    preds.to_parquet(preds_p, index=False)
+    queue.to_csv(queue_p, index=False)
+    print(f"{preds_p}\n{queue_p}")
+    return 0
+
+
+def cmd_cvat_sync(args) -> int:
+    from src.api import cvat_sync
+
+    n = cvat_sync.sync(config.load("paths")["cvat_url"], config.path("cvat_map"))
+    print(f"Đã khớp {n} ảnh -> {config.path('cvat_map')}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m src.cli")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -108,6 +138,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--preds", type=Path)
     p.add_argument("--queue", type=Path)
     p.set_defaults(fn=cmd_check)
+
+    p = sub.add_parser("samples", help="tạo file mẫu đúng quy ước (preds + queue)")
+    p.set_defaults(fn=cmd_samples)
+
+    p = sub.add_parser("cvat-sync", help="sinh bảng image_id -> task/job/frame từ CVAT local")
+    p.set_defaults(fn=cmd_cvat_sync)
 
     args = ap.parse_args(argv)
     return args.fn(args)

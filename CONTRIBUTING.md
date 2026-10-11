@@ -6,18 +6,21 @@
 
 ```
  [1] Dữ liệu ──▶ [2] Tiêm lỗi ──▶ [3] Tín hiệu ──▶ [4] Chấm điểm ──▶ [5] Hàng đợi ──▶ [6] Reviewer ──▶ [7] Đánh giá
-  bdd100k.py      inject.py        3a geometric      rule.py            api/main.py      extension/       evaluate.py
-                                   3b detector +     gbm.py                                               metrics.py
+  bdd100k.py      inject.py        3a geometric +    rule.py            api/main.py      extension/       evaluate.py
+                                      simple_signals gbm.py             cvat_sync.py     (CVAT local)     metrics.py
+                                   3b detector +
                                       model_disagreement
                                    3c guideline_rules ◀── [0] guideline/extract.py
 ```
 
-| Người | Phụ trách | Chỉ sửa trong |
+| Người | Việc | Chỉ sửa trong |
 |---|---|---|
-| **Cường** (lead) | Tiêm lỗi, tín hiệu hình học, chấm điểm, GBM, đánh giá, CLI, config; review + merge | `src/data/inject.py`, `src/features/geometric.py`, `src/scoring/`, `src/eval/`, `src/cli.py`, `configs/` |
-| **Sơn** | Tải BDD100K, chạy detector, tín hiệu bất đồng | `src/features/detector.py`, `src/features/model_disagreement.py` |
-| **Tú Anh** | API, lưu verdict, Chrome extension | `src/api/`, `extension/` |
-| **Long** | Đọc guideline, spec, rule engine, kiểm tay, pilot | `src/guideline/`, `src/features/guideline_rules.py`, `configs/guidelines/` |
+| **Cường** (lead) | Tiêm lỗi; 3 tín hiệu hình học khó (`size_outlier`, `dup_same_class`, `overlap_cross_class`); chấm điểm + file evidence; GBM, học lại; đánh giá; CLI, config; review + merge PR | `src/data/inject.py`, `src/features/geometric.py`, `src/scoring/`, `src/eval/`, `src/cli.py`, `configs/` (trừ `configs/guidelines/`) |
+| **Sơn** | Tải BDD100K, chia qua Drive; chạy detector; 4 tín hiệu bất đồng; công cụ vẽ box cho kiểm tay; VLM (Mốc 4) | `src/features/detector.py`, `src/features/model_disagreement.py`, `src/features/vlm_check.py`, `src/viz/` |
+| **Tú Anh** | CVAT local + `cvat-sync`; API (`/verdict`, `/image`, `/stats`), lưu verdict SQLite; Chrome extension; chạy pilot | `src/api/`, `extension/` |
+| **Long** | 4 tín hiệu hình học dễ (`crowded`, `many_tiny`, `rare_class`, `edge_no_trunc`); LLM đọc guideline; rule engine; kiểm tay (kappa); báo cáo | `src/features/simple_signals.py`, `src/guideline/`, `src/features/guideline_rules.py`, `configs/guidelines/` |
+
+CVAT chạy local trên từng máy, nên id task/job/frame khác nhau giữa các máy. Mỗi máy tự sinh bảng ánh xạ bằng `python -m src.cli cvat-sync` (lưu trong `data/`, không commit). Chỉ cần nạp vào CVAT các ảnh có trong hàng đợi, không cần đủ 10k ảnh.
 
 Phần dùng chung (`src/contracts.py`, `src/features/base.py`, `src/data/bdd100k.py`, `src/config.py`) đã xong. Muốn sửa phải báo cả nhóm trước.
 
@@ -27,7 +30,31 @@ Việc của mỗi người đã có sẵn chỗ trong code: tìm `TODO(<tên m�
 grep -rn "TODO(Sơn)" src/ extension/
 ```
 
-## 2. Ba quy ước ghép code
+## 2. Thứ tự làm
+
+Việc gỡ chặn cho người khác làm trước; việc chạy lâu bắt đầu sớm và chạy nền.
+
+**Sáng 12/10, làm đầu tiên:**
+
+1. **Sơn:** tải BDD100K, chia qua Drive. Có dữ liệu thì cho detector chạy nền trên 10k ảnh ngay.
+2. **Mọi người:** chưa có dữ liệu thật thì chạy `python -m src.cli samples` để có file mẫu đúng quy ước mà code trước.
+
+| Mốc | Cường | Sơn | Tú Anh | Long |
+|---|---|---|---|---|
+| **1** (12–13/10) | Tiêm lỗi → 3 tín hiệu khó → đánh giá + gain curve | `detector.py` ra `yolo_preds.parquet` | Dựng CVAT local → `/verdict` + SQLite trên file mẫu → `cvat-sync` | 4 tín hiệu dễ → spec `bdd-default` + `load_spec` |
+| **2** (14–15/10) | Hàng đợi rule + detector → file evidence | 4 tín hiệu bất đồng | Side panel hiển thị hàng đợi thật, mở đúng frame | Rule R1–R3 → LLM đọc guideline → R4 (sau khi Sơn xong khớp box) → kiểm tay nửa ngẫu nhiên |
+| **3** (16–18/10) | GBM → mô phỏng học lại → bảng 5 phương pháp | Công cụ vẽ box cho kiểm tay → chuẩn bị VLM | `/stats`, ảnh audit, hoàn thiện extension | Kiểm tay nửa top hàng đợi, đo kappa |
+| **4** (19–21/10) | Hỗ trợ, review | VLM xem lại top 30% (cắt nếu trễ) | Sửa lỗi giao diện | LLM viết báo cáo batch |
+| **5** (22–23/10) | Pilot | Pilot | Chạy hệ thống cho pilot | Đo thời gian pilot |
+| **6** (24–25/10) | README, video demo | Hỗ trợ | Hỗ trợ | Báo cáo cuối |
+
+**Phụ thuộc cần theo dõi:**
+
+- Tối 12/10 chưa có `yolo_preds.parquet` thì Mốc 2 trễ: Sơn báo tiến độ chạy detector ngay trong báo cáo 22:30.
+- Rule R4 của Long cần phần khớp box của Sơn; kiểm tay nửa top cần hàng đợi của Cường.
+- Cường review PR 2 lần mỗi ngày, lúc 12:00 và 21:00, để không ai chờ merge quá nửa ngày.
+
+## 3. Ba quy ước ghép code
 
 Đây là "hợp đồng" giữa các module. Mỗi người code theo đúng quy ước thì ghép vào là chạy, không cần chờ người khác xong.
 
@@ -42,7 +69,7 @@ Kiểm file có đúng quy ước không:
 python -m src.cli check --preds data/yolo_preds.parquet --queue reports/ranked_queue_rule-v0.csv
 ```
 
-## 3. Cài đặt
+## 4. Cài đặt
 
 ```bash
 uv venv --python 3.11
@@ -53,7 +80,7 @@ pytest -q && ruff check .
 
 Dữ liệu BDD100K (ảnh val + `det_val.json`) đặt theo đường dẫn trong `configs/paths.yaml`, chia qua Drive, **không đưa vào git**.
 
-## 4. Quy tắc nhánh git
+## 5. Quy tắc nhánh git
 
 ```
  feat/son-model-missing-label ─┐
@@ -83,7 +110,7 @@ Tên dở: `son`, `test1`, `update`, `fix-bug`: đọc tên không biết làm g
 
 **Commit message** ghi rõ đổi gì: `feat(features): thêm tín hiệu model_missing_label`, `fix(scoring): hoà điểm xếp theo image_id`.
 
-## 5. Quy trình mỗi ngày
+## 6. Quy trình mỗi ngày
 
 1. Sáng: lấy code mới nhất từ `develop`, rồi tạo nhánh cho việc hôm nay:
 
@@ -112,7 +139,7 @@ Link:      PR, file, ảnh kết quả
 Questions: câu hỏi cho nhóm
 ```
 
-## 6. Nguyên tắc
+## 7. Nguyên tắc
 
 - **Tham số để trong `configs/*.yaml`**, không hard-code (seed, trọng số, ngưỡng, đường dẫn).
 - **Seed 42**, chia 6k/2k/2k theo ảnh. Một ảnh không bao giờ nằm ở 2 split.
@@ -121,10 +148,10 @@ Questions: câu hỏi cho nhóm
 - Lỗi tiêm chỉ là thước đo lúc phát triển. Thước đo cuối là tập kiểm tay lỗi thật.
 - Không commit dữ liệu, ảnh, model, secrets (`.env`).
 
-## 7. Định nghĩa "xong"
+## 8. Định nghĩa "xong"
 
 Một việc chỉ tính là xong khi đủ 3 điều sau:
 
-- [ ] Code chạy được qua CLI hoặc API, đúng quy ước ở mục 2.
+- [ ] Code chạy được qua CLI hoặc API, đúng quy ước ở mục 3.
 - [ ] Có test, `pytest -q && ruff check .` xanh.
 - [ ] PR đã merge vào `develop`.

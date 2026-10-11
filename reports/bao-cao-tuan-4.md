@@ -62,12 +62,14 @@ Mục tiêu là ưu tiên những ảnh có nguy cơ sai nhãn cao để QC xem 
 
 Mỗi người phụ trách một module và chỉ sửa thư mục của mình, để làm song song mà không phải chờ nhau.
 
-| Thành viên | Vai trò | Phụ trách | Thư mục |
-|---|---|---|---|
-| Hoàng Mạnh Cường | Trưởng nhóm, ML | Tiêm lỗi, tín hiệu hình học, chấm điểm, GBM, đánh giá, CLI; review và merge code | `src/data/inject.py`, `src/features/geometric.py`, `src/scoring/`, `src/eval/`, `src/cli.py`, `configs/` |
-| Sơn | BE, dữ liệu | Tải BDD100K, chạy detector, so dự đoán với nhãn | `src/features/detector.py`, `src/features/model_disagreement.py` |
-| Tú Anh | BE, API + giao diện | API, lưu verdict, side panel, mở đúng frame để review | `src/api/`, `extension/` |
-| Long | BA | Đọc guideline thành spec, rule engine, kiểm tay, pilot đo thời gian | `src/guideline/`, `src/features/guideline_rules.py`, `configs/guidelines/` |
+| Thành viên | Vai trò | Phụ trách |
+|---|---|---|
+| Hoàng Mạnh Cường | Trưởng nhóm, ML | Tiêm lỗi, 3 tín hiệu hình học khó, chấm điểm, GBM, học lại, đánh giá; review và merge code |
+| Sơn | BE, dữ liệu + model | Tải BDD100K, chạy detector, 4 tín hiệu bất đồng, công cụ vẽ box cho kiểm tay, VLM |
+| Tú Anh | BE, API + giao diện | CVAT local, API lưu verdict, Chrome extension mở đúng frame, chạy pilot |
+| Long | BA | 4 tín hiệu hình học dễ, LLM đọc guideline, rule engine, kiểm tay, báo cáo |
+
+Việc gỡ chặn làm trước: Sơn tải dữ liệu và cho detector chạy nền ngay ngày đầu; ai chưa có dữ liệu thì dùng file mẫu đúng quy ước để code trước.
 
 **Quy ước để ghép code:**
 

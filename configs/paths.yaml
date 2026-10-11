@@ -8,3 +8,5 @@ preds_parquet: data/yolo_preds.parquet # quy ước 2, giữ tên kể cả khi 
 review_db: data/review.db
 models_dir: models
 reports_dir: reports
+cvat_url: http://localhost:8080        # CVAT chạy local trên từng máy; khác cổng thì sửa ở máy mình
+cvat_map: data/cvat_map.parquet        # sinh bằng: python -m src.cli cvat-sync (không commit)

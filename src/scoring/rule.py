@@ -30,3 +30,9 @@ def rank(signals: dict[str, Signals], weights: dict[str, float], model_version: 
     df["rank"] = range(1, len(df) + 1)
     df["model_version"] = model_version
     return df[QUEUE_COLS].reset_index(drop=True)
+
+
+def write_evidence(signals: dict[str, Signals], out_jsonl) -> None:
+    """reports/evidence_<model_version>.jsonl: mỗi dòng {image_id, boxes: [{obj_id, box, note, signal}]},
+    để API/extension tô box nghi vấn. Đi kèm ranked_queue, không đổi quy ước 3."""
+    raise NotImplementedError("TODO(Cường): gom evidence của mọi tín hiệu theo image_id")
