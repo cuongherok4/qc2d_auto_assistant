@@ -131,12 +131,14 @@ Gợi ý khi thời gian ngắn: giữ kế hoạch gốc, thêm phần cốt l�
 
 Chia theo module, mỗi người chỉ sửa thư mục của mình:
 
-| Người | Vai | Việc | Chỉ sửa trong |
-|---|---|---|---|
-| Cường | ML lead, ghép code | Chấm điểm, GBM, học lại, đánh giá, CLI | `src/scoring/`, `src/eval/`, `src/cli.py`, `configs/` |
-| Sơn | BE: dữ liệu | Tải dữ liệu, chạy YOLO, so YOLO với nhãn, hàm vẽ box | `src/features/model_disagreement.py` |
-| Tú Anh | BE: API + extension | API, review DB, side panel, nút review, mở frame CVAT | `src/api/`, `extension/` |
-| Long | BA | Spec guideline, kiểm tay (cùng Sơn), pilot, báo cáo | `configs/guidelines/`, `src/features/guideline_rules.py` |
+| Người | Vai | Việc |
+|---|---|---|
+| Cường | ML lead, ghép code | Tiêm lỗi, 3 tín hiệu hình học khó, chấm điểm, GBM, học lại, đánh giá, CLI |
+| Sơn | BE: dữ liệu + model | Tải dữ liệu, chạy detector, tín hiệu bất đồng, vẽ box cho kiểm tay, VLM |
+| Tú Anh | BE: API + giao diện | CVAT local + cvat-sync, API, review DB, extension, pilot |
+| Long | BA | 4 tín hiệu hình học dễ, LLM đọc guideline, rule engine, kiểm tay, báo cáo |
+
+Thư mục từng người và thứ tự làm: `CONTRIBUTING.md` mục 1–2.
 
 **3 quy ước để ghép code:**
 1. Tín hiệu trả về `SignalResult(name, value 0–1, reason tiếng Việt có con số)`.
