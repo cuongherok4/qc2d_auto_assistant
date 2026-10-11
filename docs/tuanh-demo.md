@@ -108,3 +108,21 @@ M13_BROWSER_TESTS=1 PLAYWRIGHT_BROWSERS_PATH=/tmp/m13-browsers pytest -q tests/t
 Browser test cần extra `browser` và Chromium Playwright; đường dẫn /tmp trên chỉ áp dụng máy này. Unit test dùng DB tạm/mock. Nếu TestClient/Chrome không chạy trong sandbox Codex thì chạy với quyền socket phù hợp; không sửa sản phẩm để né sandbox.
 
 Kết quả chốt: 46 passed/2 skipped, Ruff sạch; browser opt-in trước đó 1 passed. Kiểm tra Chrome + CVAT thật bằng fixture: sửa/lưu occluded qua UI, đọc lại nhãn và lưu verdict/stat. Bằng chứng không commit: `data/cvat-runtime/integration-evidence.json`, `cvat-saved.png`, `extension-saved.png`. Chỉ kiểm tra một máy, chưa pilot/video hay nghiệm thu dữ liệu thật.
+
+## Kiểm tra riêng Mốc A đã chốt
+
+Bằng chứng ở `data/milestone-a/verification.json`: HTTP thật với 3 loại verdict, retry, đầu vào sai, review lại và stats; restart **tiến trình API** với cùng DB vẫn giữ 4 lượt/3 ảnh. `api-smoke.db` là DB kiểm tra riêng, không phải DB pilot. Có thể kiểm tra trong API docs hoặc:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl 'http://127.0.0.1:8000/queue?limit=1&offset=0'
+curl http://127.0.0.1:8000/image/img-day-1
+```
+
+Mốc A không có bước tự phát hiện lỗi sau khi kéo box trong CVAT. API đọc snapshot CSV/evidence; bước kiểm lại nhãn cần ghép pipeline ở các mốc tiếp theo.
+
+## Bản sửa đồng hồ ở Mốc B
+
+Đồng hồ đã được kiểm tra với CVAT thật khi URL không còn `?frame=0`: vẫn đếm frame mặc định 0, pause khi mất focus/đổi frame, resume khi quay lại đúng frame. Sau cập nhật code hoặc ZIP, vào `chrome://extensions` và **Reload M13 Review**, rồi mở lại panel. Không ghi đè nhãn người dùng trong phép kiểm này. Bằng chứng local: `data/milestone-b/clock-verification.json`.
+
+Mốc A và B đã chạy được trên dữ liệu mẫu. Mốc C (pipeline thật), D (Gemini/người duyệt/engine thật) và E (ML, các máy, pilot/video) chưa nghiệm thu. Tiến độ 12/18 = 66.7% là đếm nhóm việc đã có phần triển khai/kiểm tra độc lập, không tính chất lượng QC hoặc trạng thái PR merge.

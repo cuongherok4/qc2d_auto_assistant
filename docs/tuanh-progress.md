@@ -86,3 +86,38 @@ Tiếp tục theo thứ tự:
 6. Hỗ trợ 3 máy còn lại, chạy pilot người thật có đối trọng thứ tự, quay video <=3 phút.
 
 Checkpoint đã lưu thành 3 commit local: API/CVAT; guideline; extension và bàn giao. Working tree phần code đã chốt; chỉ HTML cá nhân không được theo dõi. Nhánh chưa push, PR chưa mở/merge. API local :8000 và CVAT :8080 được để chạy để Tú Anh xem demo; không còn thao tác huấn luyện/download được bắt đầu mới.
+
+## Đối chiếu 18 việc và Mốc A–E · phiên tiếp tục 11/10/2026
+
+Bản kế hoạch mới giống bản ban đầu. Có **18 nhóm việc** trong mục E và **5 mốc A–E** trong mục G, không phải 18 giai đoạn tuần tự.
+
+Mốc A đã kiểm tra đủ trên dữ liệu mẫu bằng HTTP thật và restart tiến trình thật: health/queue/phân trang, metadata/bytes ảnh, cả 3 verdict, retry/conflict/validation, lịch sử review lại, SQLite append-only. Sau restart: 4 lượt/3 ảnh, stats không đổi, remaining=0. DB kiểm tra riêng `data/milestone-a/api-smoke.db`, bằng chứng `data/milestone-a/verification.json`; không thay DB review của người dùng. 16 test API đạt. Thời gian fixture tự động không dùng cho pilot.
+
+Cách tính phần trăm: số nhóm việc đã triển khai và kiểm tra được trong phạm vi độc lập / 18, không cộng điểm cho các phần mới có adapter. Sau khi chốt #11: 12/18 = 66.7%: #1, #2, #3, #4, #5, #6, #7, #9, #10, #11, #12, #18. Đây là tiến độ kỹ thuật local, không thay định nghĩa Done cần PR merge của CONTRIBUTING và không chứng minh chất lượng QC trên BDD thật.
+
+| Nhóm | Trạng thái hiện tại |
+|---|---|
+| 1 | Đạt: Python 3.11 và fixtures đúng contracts |
+| 2 | Đạt local: CVAT thật, account, task fixture và hướng dẫn |
+| 3 | Đạt: queue, batch/phân trang/thiếu dữ liệu |
+| 4 | Đạt: metadata và nội dung ảnh |
+| 5 | Đạt: cả 3 verdict, SQLite/history/retry/restart |
+| 6 | Đạt: mapping REST thực tế + tests |
+| 7 | Đạt phần khảo sát/bàn giao: ghi rõ V1 chưa được cung cấp |
+| 8 | Một phần: extract/schema/quote/cache; chờ Gemini thật và người duyệt |
+| 9 | Đạt theo nhánh phát triển cho phép trong kế hoạch: 3 DOCX fixture ra draft chưa duyệt |
+| 10 | Đạt: MV3 queue/evidence và trạng thái lỗi |
+| 11 | Đạt: sửa regression đồng hồ frame mặc định, test Chrome và CVAT thật |
+| 12 | Đạt: stats/audit phía server, tests fixture |
+| 13 | Adapter/gate/rollback có; backend ML thật chưa có |
+| 14 | Đã kiểm tra 1/4 máy, có package/hướng dẫn |
+| 15 | Có export/quy trình; chưa pilot người thật |
+| 16 | Có kịch bản; chưa video <=3 phút |
+| 17 | Test/commit local đạt; chưa push/PR/merge |
+| 18 | Đạt: checklist, bằng chứng, báo cáo soạn sẵn |
+
+Theo mốc G: A đã đạt; B đã đạt trong phạm vi fixture, đồng hồ đã kiểm tra CVAT thật; C chưa đạt (queue/evidence pipeline thật); D chưa đạt (Gemini/người duyệt/rule engine thật, stats đã có); E chưa đạt (ML/các máy/pilot/video).
+
+Việc di chuyển nhãn không tự làm điểm đổi vì API phục vụ queue snapshot. Tính lại lỗi từ nhãn CVAT đã lưu cần nối pipeline, thuộc phần ghép sau A/B. Không báo đã hoàn thành bước này. COCO8 đã tải thử trong lúc phạm vi chưa được xác nhận, chưa được đưa vào pipeline hay nghiệm thu; không thay BDD100K/upstream của nhóm.
+
+Chốt phiên tiếp tục: Mốc A và B đạt yêu cầu chạy trên dữ liệu mẫu; không đánh đồng với nghiệm thu MVP BDD thật. Sửa đồng hồ nhận frame mặc định 0 khi CVAT xoá query frame=0, vẫn dừng khi frame sai/URL lỗi/mất focus. Test regression thất bại trước sửa và đạt sau sửa. Kiểm tra CVAT v2.74.1 thật ở frame 0: tăng thời gian, pause và resume đúng; không sửa annotations hoặc gửi verdict. Bằng chứng: `data/milestone-b/clock-verification.json`. Full pytest 46 passed/2 skipped, browser opt-in 1 passed, Ruff sạch. Extension ZIP đã đóng gói lại; người dùng cần Reload extension để nhận bản sửa. Chưa push/PR/merge.

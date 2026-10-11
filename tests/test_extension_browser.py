@@ -139,6 +139,20 @@ def test_mv3_real_api_focus_retry_and_all_verdicts(tmp_path):
 
             panel.wait_for_timeout(200)
             assert clock()["running"] is True
+            # Real CVAT removes ?frame=0 from its URL. The displayed default is still frame zero.
+            cvat.evaluate("history.replaceState(null, '', location.pathname)")
+            cvat.wait_for_timeout(100)
+            assert clock()["running"] is True
+            before = clock()["seconds"]
+            cvat.wait_for_timeout(150)
+            assert clock()["seconds"] > before
+            for frame in ("1", "invalid", ""):
+                cvat.evaluate("f => history.replaceState(null, '', location.pathname + '?frame=' + f)", frame)
+                cvat.wait_for_timeout(50)
+                assert clock()["running"] is False
+            cvat.evaluate("history.replaceState(null, '', location.pathname + '?frame=0')")
+            cvat.wait_for_timeout(50)
+            assert clock()["running"] is True
             extra = context.new_page()
             extra.goto("about:blank")
             extra.bring_to_front()

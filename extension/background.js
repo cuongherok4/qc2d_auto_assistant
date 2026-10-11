@@ -56,6 +56,14 @@ function accrue(value) {
     value.runningSince = null;
   }
 }
+function frameNumber(url) {
+  const raw = url.searchParams.get("frame");
+  // CVAT's default frame is zero; the UI removes ?frame=0 after navigation.
+  if (raw === null) return 0;
+  if (!/^\d+$/.test(raw)) return null;
+  const frame = Number(raw);
+  return Number.isSafeInteger(frame) ? frame : null;
+}
 async function refreshClock() {
   const value = await state();
   if (!value) return null;
@@ -65,8 +73,9 @@ async function refreshClock() {
       const [tab, win] = await Promise.all([chrome.tabs.get(value.tabId), chrome.windows.get(value.windowId)]);
       // Frame changes and another focused tab pause the clock even in the same CVAT job.
       const actual = new URL(tab.url), expected = new URL(value.cvatUrl);
+      const actualFrame = frameNumber(actual);
       const sameFrame = actual.origin === expected.origin && actual.pathname === expected.pathname &&
-        actual.searchParams.get("frame") === expected.searchParams.get("frame");
+        actualFrame !== null && actualFrame === frameNumber(expected);
       if (tab.active && win.focused && tab.status === "complete" && sameFrame) {
         value.runningSince = Date.now();
       }
