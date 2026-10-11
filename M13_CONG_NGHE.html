@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M13 Tech Stack</title>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1d1d1b; --muted:#5f5d57;
+  --border:#dedbd2; --accent:#2f5d8a; --accent-soft:#e3ecf5;
+  --ok:#2e7d4f; --ok-soft:#e2f2e8; --warn:#9a6a00; --warn-soft:#fbf0d6; --no:#a33a3a; --no-soft:#f7e3e3;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#161614; --surface:#1f1f1c; --surface-2:#272723; --text:#ecebe6; --muted:#a6a49c;
+    --border:#3a3934; --accent:#8fb6dd; --accent-soft:#22303d;
+    --ok:#7cc79a; --ok-soft:#1e3127; --warn:#e3b95a; --warn-soft:#352c17; --no:#e58c8c; --no-soft:#3a2222;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161614; --surface:#1f1f1c; --surface-2:#272723; --text:#ecebe6; --muted:#a6a49c;
+  --border:#3a3934; --accent:#8fb6dd; --accent-soft:#22303d;
+  --ok:#7cc79a; --ok-soft:#1e3127; --warn:#e3b95a; --warn-soft:#352c17; --no:#e58c8c; --no-soft:#3a2222;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:2rem;line-height:1.2;margin:0 0 8px}
+h2{font-size:1.35rem;margin:56px 0 12px;padding-top:12px;border-top:1px solid var(--border)}
+h3{font-size:1.05rem;margin:24px 0 8px}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:1.05rem;max-width:720px}
+code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--mono);font-size:.85rem;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;line-height:1.5}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:24px 0 0}
+nav a{font-size:.85rem;color:var(--accent);text-decoration:none;border:1px solid var(--border);background:var(--surface);padding:4px 10px;border-radius:999px}
+nav a:hover{background:var(--accent-soft)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.grid .card{margin:0}
+.card h3{margin-top:0}
+.tbl{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--border)}
+th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.t-use{background:var(--ok-soft);color:var(--ok)}
+.t-opt{background:var(--warn-soft);color:var(--warn)}
+.t-no{background:var(--no-soft);color:var(--no)}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0}
+.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+ul{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:16px 0}
+.step{flex:1 1 150px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.88rem}
+.step b{display:block;color:var(--accent);font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
+.muted{color:var(--muted)}
+footer{margin-top:56px;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+
+<h1>M13 Reviewer Prioritization: chọn công nghệ và thuật toán</h1>
+<p class="lead">Đề xuất từ góc nhìn senior cho đợt build 12 ngày (07/10 → 18/10/2026). Mục tiêu: hàng đợi review xếp theo rủi ro sai nhãn trên BDD100K val, đo bằng recall@20% và thời gian tiết kiệm. Nguyên tắc chọn: <strong>đơn giản, tái lập được, license sạch, giải thích được</strong>.</p>
+<p class="muted" style="font-size:.88rem">
+<span class="tag t-use">Dùng</span> phần lõi, bắt buộc có ·
+<span class="tag t-opt">Tuỳ chọn</span> làm nếu còn thời gian hoặc chỉ dùng lúc phát triển ·
+<span class="tag t-no">Không dùng</span> trong đợt này, ghi vào hướng phát triển
+</p>
+
+<nav>
+  <a href="#tldr">Tóm tắt</a><a href="#pipeline">Pipeline</a><a href="#stack">Stack</a>
+  <a href="#detector">Detector</a><a href="#algo">Thuật toán</a><a href="#score">Chấm điểm</a>
+  <a href="#learn">Học lại</a><a href="#eval">Đánh giá</a><a href="#ui">Giao diện</a>
+  <a href="#skip">Không làm</a><a href="#conflicts">Chốt mâu thuẫn</a>
+</nav>
+
+<h2 id="tldr">1. Tóm tắt quyết định</h2>
+<div class="tbl"><table>
+<tr><th>Hạng mục</th><th>Chọn</th><th>Lý do ngắn</th></tr>
+<tr><td>Ngôn ngữ, môi trường</td><td>Python 3.11, <code>uv</code>, <code>ruff</code>, <code>pytest</code></td><td>Đã có trong repo; <code>uv</code> tạo venv 3.11 nhanh trên máy có Python 3.14</td></tr>
+<tr><td>Dữ liệu dạng bảng</td><td>pandas + Parquet (pyarrow)</td><td>10k ảnh, khoảng 185k object: vừa RAM, không cần Spark/Polars</td></tr>
+<tr><td>Detector độc lập</td><td>RT-DETR pretrained COCO qua Hugging Face <code>transformers</code></td><td>Apache-2.0, dùng nội bộ không vướng AGPL như Ultralytics</td></tr>
+<tr><td>So khớp nhãn với dự đoán</td><td>Hungarian (<code>scipy.optimize.linear_sum_assignment</code>) trên IoU</td><td>Ghép tối ưu 1-1, không bị lệch như ghép tham lam ở ảnh đông</td></tr>
+<tr><td>Tín hiệu rủi ro</td><td>Robust z-score, IoU, luật theo guideline, điểm kiểu ObjectLab</td><td>Rẻ, giải thích được, bắt được cả lỗi xoá nhãn nhờ detector</td></tr>
+<tr><td>Mô hình chấm điểm</td><td>Rule → rule + detector → LightGBM</td><td>Bậc thang baseline rõ ràng; GBM mạnh với đặc trưng dạng bảng</td></tr>
+<tr><td>Giải thích</td><td>Lý do từ bằng chứng cấp object; <code>pred_contrib</code> (TreeSHAP) để phân tích</td><td>Reviewer cần "box nào, sai gì", không cần giá trị SHAP</td></tr>
+<tr><td>Đánh giá</td><td>Recall@k, gain curve, time saved, bootstrap CI, Cohen's kappa</td><td>Có khoảng tin cậy thì con số mới đáng tin</td></tr>
+<tr><td>Giao diện review</td><td>FastAPI + SQLite + Chrome extension MV3 mở CVAT</td><td>Đúng quy trình nhóm đang dùng, tái sử dụng V1 Guideline Assistant</td></tr>
+<tr><td>LLM / VLM</td><td>LLM đọc guideline → spec (Vòng 2, bắt buộc); VLM kiểm luật nhìn ảnh trên top 30% (Vòng 4, tuỳ chọn)</td><td>Phép C cần luật lấy từ guideline; LLM chỉ chạy 1 lần mỗi batch và có người duyệt. VLM chỉ giữ nếu tăng chỉ số</td></tr>
+</table></div>
+
+<h2 id="pipeline">2. Pipeline và công nghệ ở từng bước</h2>
+<div class="flow">
+  <div class="step"><b>1 · Nạp dữ liệu</b>JSON BDD100K → pandas → Parquet</div>
+  <div class="step"><b>2 · Tiêm lỗi</b>numpy RNG seed 42, 5 loại lỗi</div>
+  <div class="step"><b>0 · Guideline</b>LLM đọc DOCX/PDF → spec YAML, người duyệt</div>
+  <div class="step"><b>3a · Hình học</b>robust z, IoU, luật guideline</div>
+  <div class="step"><b>3b · Detector</b>RT-DETR + Hungarian</div>
+  <div class="step"><b>4 · Chấm điểm</b>rule → LightGBM</div>
+  <div class="step"><b>5 · Hàng đợi</b>CSV → FastAPI → extension</div>
+  <div class="step"><b>6 · Học lại</b>SQLite → retrain có cổng kiểm tra</div>
+  <div class="step"><b>7 · Đánh giá</b>recall@k, gain, bootstrap</div>
+</div>
+
+<h2 id="stack">3. Stack chi tiết</h2>
+<div class="tbl"><table>
+<tr><th>Thư viện</th><th>Vai trò</th><th>License</th><th></th></tr>
+<tr><td><code>pandas</code>, <code>numpy</code>, <code>pyarrow</code></td><td>Bảng ảnh/object, cache dự đoán dạng Parquet</td><td>BSD / Apache-2.0</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>scipy</code></td><td>Hungarian matching, thống kê</td><td>BSD</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>torch</code> + <code>transformers</code></td><td>Chạy RT-DETR (<code>RTDetrForObjectDetection</code>)</td><td>BSD / Apache-2.0</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>torchvision</code></td><td>Phương án dự phòng: Faster R-CNN COCO; <code>ops.box_iou</code></td><td>BSD-3</td><td><span class="tag t-opt">Tuỳ chọn</span></td></tr>
+<tr><td><code>lightgbm</code></td><td>GBM chấm điểm, <code>pred_contrib</code></td><td>MIT</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>scikit-learn</code></td><td>Chia fold, metric, calibration</td><td>BSD</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>pydantic</code>, <code>PyYAML</code></td><td>Kiểm tra schema config và spec guideline (cả JSON LLM trả về)</td><td>MIT</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>python-docx</code>, <code>pdfplumber</code></td><td>Tách văn bản guideline theo trang để đưa cho LLM</td><td>MIT</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td>LLM đọc guideline</td><td>Trích spec; dùng lại backend V1 Guideline Assistant. Local hay API: chưa chốt</td><td>tuỳ model</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>fastapi</code>, <code>uvicorn</code>, <code>sqlite3</code></td><td>API local và lưu kết quả review</td><td>MIT / BSD / public domain</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>matplotlib</code></td><td>Gain curve, đường cong học, hình cho báo cáo</td><td>PSF-based</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>Pillow</code></td><td>Vẽ box overlay cho <code>/image/{id}</code></td><td>HPND</td><td><span class="tag t-use">Dùng</span></td></tr>
+<tr><td><code>fiftyone</code></td><td>Xem lỗi lúc phát triển (lọc theo tín hiệu, so GT với dự đoán)</td><td>Apache-2.0</td><td><span class="tag t-opt">Tuỳ chọn</span></td></tr>
+<tr><td><code>ultralytics</code> (YOLOv8)</td><td>Detector</td><td><strong>AGPL-3.0</strong></td><td><span class="tag t-no">Không dùng</span></td></tr>
+<tr><td><code>cleanlab</code></td><td>ObjectLab có sẵn</td><td><strong>AGPL-3.0</strong></td><td><span class="tag t-no">Không dùng</span> (tự viết lại ý tưởng, khoảng 80 dòng)</td></tr>
+</table></div>
+<div class="note warn"><strong>Về license:</strong> Q1 trả lời đây là "tool nội bộ dùng thật", nên nên tránh thư viện AGPL ngay từ đầu, kể cả khi bản nộp chưa bị ảnh hưởng. Điều khoản dùng BDD100K cũng phải đọc và lưu lại trước khi dùng ngoài phạm vi học tập.</div>
+
+<h2 id="detector">4. Detector: vì sao chọn RT-DETR</h2>
+<div class="grid">
+  <div class="card"><h3>Chọn: RT-DETR R50 (COCO)</h3>
+  <ul>
+    <li>Checkpoint <code>PekingU/rtdetr_r50vd</code> trên HF, Apache-2.0.</li>
+    <li>Không cần NMS nên ít box trùng, đỡ tạo cảnh báo "trùng nhãn" giả.</li>
+    <li>Ước tính khoảng 10k ảnh 1280×720 với fp16 trên GPU 4–12GB mất cỡ chục phút đến dưới 1 giờ. Chạy một lần rồi cache ra Parquet.</li>
+  </ul></div>
+  <div class="card"><h3>Vì sao dùng model pretrained COCO, không fine-tune</h3>
+  <ul>
+    <li>Model train trên nhãn BDD có lỗi sẽ học luôn lỗi có hệ thống, tức "đồng ý với cái sai".</li>
+    <li>Một ý kiến <strong>độc lập</strong> mới có giá trị làm tín hiệu bất đồng.</li>
+    <li>Cái giá: không có <code>rider</code> và <code>traffic sign</code>, nên loại hai class này khỏi tín hiệu bất đồng.</li>
+  </ul></div>
+</div>
+<p><strong>Ngưỡng confidence theo từng class:</strong> chọn τ<sub>c</sub> trên tập val sao cho F1 giữa dự đoán và nhãn là lớn nhất. Không dùng một ngưỡng 0.5 chung, vì độ tự tin với đèn giao thông khác hẳn với xe hơi.</p>
+<p><strong>Phương án dự phòng:</strong> nếu GPU vẫn lỗi, dùng torchvision Faster R-CNN trên CPU với ảnh thu nhỏ, chạy nền qua đêm. Cache Parquet giúp phần còn lại của pipeline không phụ thuộc detector nào.</p>
+
+<h2 id="algo">5. Thuật toán tín hiệu rủi ro</h2>
+
+<h3>5.1 Tín hiệu hình học và thống kê (không cần model)</h3>
+<div class="tbl"><table>
+<tr><th>Tín hiệu</th><th>Thuật toán</th><th>Bắt được lỗi</th></tr>
+<tr><td>Kích thước / tỉ lệ khung bất thường</td><td>Robust z-score theo class: <code>(x − median) / (1.4826·MAD)</code> trên log(diện tích) và log(w/h)</td><td>Co/giãn box, đổi class</td></tr>
+<tr><td>Box trùng</td><td>Ma trận IoU cặp đôi, cùng class IoU &gt; 0.5–0.6</td><td>Box giả, nhãn đôi</td></tr>
+<tr><td>Chồng lấn khác class</td><td>IoU &gt; 0.7 giữa hai class khác nhau</td><td>Đổi class (box cũ chưa xoá)</td></tr>
+<tr><td>Chạm mép nhưng không đánh truncated</td><td>So toạ độ với lề ảnh</td><td>Thiếu attribute, dịch box ra mép</td></tr>
+<tr><td>Ngữ cảnh khó</td><td>Đêm, mưa, sương, số box nhỏ/bị che</td><td>Sót nhãn (tín hiệu yếu, xem cảnh báo bên dưới)</td></tr>
+</table></div>
+<div class="note warn">Nếu tiêm lỗi theo "phân phối thực tế" (ưu tiên đêm/box nhỏ) thì tín hiệu ngữ cảnh sẽ <strong>được lợi nhờ chính cách tiêm</strong>. Phải báo riêng kết quả có và không có nhóm tín hiệu này, và kiểm chứng lại trên tập lỗi thật.</div>
+
+<h3>5.2 Bất đồng với detector</h3>
+<pre>cho mỗi ảnh:
+  1. lọc dự đoán theo spec guideline (bỏ object dưới ngưỡng px, class không bắt buộc)
+  2. cost = 1 − IoU(GT, pred), ghép KHÔNG phân biệt class bằng Hungarian
+  3. cặp có IoU ≥ 0.5             → matched
+       khác class                  → nghi đổi class   (trọng số = conf của pred)
+       IoU trong [0.5, 0.7)        → nghi box lệch    (ngưỡng 0.7 lấy theo guideline)
+  4. pred không được ghép, conf ≥ τ_c → nghi thiếu nhãn (bắt được lỗi XOÁ NHÃN)
+  5. GT không được ghép               → nghi box thừa / box giả
+</pre>
+<p>Ghép không phân biệt class trước rồi mới so class, vì nếu ghép theo từng class thì một lỗi đổi class sẽ bị đếm thành hai lỗi (một box thừa và một box thiếu) và không có lý do "nhầm car thành truck".</p>
+
+<h3>5.3 Điểm chất lượng nhãn kiểu ObjectLab</h3>
+<p>Ý tưởng lấy từ bài báo ObjectLab (Tkachenko và cộng sự, 2023), tự viết lại để tránh AGPL. Có ba điểm con cho mỗi object, đều nằm trong [0, 1]:</p>
+<ul>
+  <li><strong>overlooked</strong>: detector tự tin mà không có nhãn tương ứng.</li>
+  <li><strong>swapped</strong>: box khớp vị trí nhưng xác suất class của nhãn thấp.</li>
+  <li><strong>badly located</strong>: IoU giữa nhãn và dự đoán khớp nhất còn thấp.</li>
+</ul>
+<p><strong>Gộp object → ảnh:</strong> dùng <em>soft-min</em> (hoặc trung bình top-k điểm xấu nhất) thay vì trung bình. Ảnh có một box sai nặng giữa 40 box đúng vẫn phải lên đầu hàng đợi; lấy trung bình sẽ làm loãng tín hiệu đó.</p>
+
+<h3>5.4 Luật theo guideline của batch</h3>
+<p><strong>Nguồn luật:</strong> LLM đọc guideline DOCX/PDF của batch (mỗi batch một lần) và trả JSON theo schema <code>pydantic</code>. Mỗi luật kèm câu trích nguyên văn và số trang. Người phụ trách so từng luật với câu trích, sửa rồi điền <code>approved_by</code>. Spec chưa duyệt thì không được dùng để chấm. Luồng đầy đủ ở mục 3 của <code>M13_QUY_TRINH.html</code>.</p>
+<pre># configs/guidelines/bdd_v1.yaml  (LLM sinh nháp ở drafts/, người duyệt rồi mới chuyển ra đây)
+id: bdd_v1
+version: 1.0.0
+approved_by: ""                # trống = chưa duyệt, rule engine từ chối chạy
+source: {file: guidelines/batch_01.docx, sha256: "..."}
+classes: [pedestrian, rider, car, truck, bus, train, motorcycle, bicycle, traffic light, traffic sign]
+merge: {}                      # bản biến thể: {bus: truck}
+min_height_px: {default: 0, car: 15, traffic light: 10}
+near_threshold_px: 3           # sát ngưỡng ±3px chỉ tăng điểm, không kết luận lỗi
+iou_loose: 0.7
+required_attributes: [occluded, truncated]
+rules:                         # luật đo được → rule engine (phép C), chạy 100% ảnh
+  - {id: R1, check: below_min_height,      severity: 0.6, page: 3, quote: "Không cần gán xe ở xa..."}
+  - {id: R2, check: class_not_allowed,     severity: 1.0, page: 2, quote: "..."}
+  - {id: R3, check: missing_attribute,     severity: 0.3, page: 4, quote: "..."}
+  - {id: R4, check: model_object_missing,  severity: 1.0, page: 3, quote: "..."}
+visual_rules:                  # luật phải nhìn ảnh → VLM (phép D), chỉ top 30%
+  - {id: V1, category: traffic light, page: 3, quote: "...",
+     question: "Vật trong khung là đèn giao thông hay đèn đường / đèn xe?"}
+unclear:                       # LLM không tìm thấy trong guideline → báo trưởng nhóm
+  - {category: traffic sign, field: min_height_px}
+</pre>
+<p>Lý do hiển thị dẫn chiếu rule ID và trang, ví dụ <em>"[R4] Thiếu car cao 22px, ngưỡng 15px (tr.3)"</em>. Dự đoán của detector được lọc theo spec (bỏ class không có trong <code>classes</code>, bỏ box dưới ngưỡng, áp <code>merge</code>) trước khi so với nhãn.</p>
+<p><strong>Tái lập:</strong> LLM chạy temperature 0, ép trả JSON đúng schema, cache câu trả lời theo hash file guideline. Rule engine chỉ đọc YAML, nên đổi LLM hay sửa tay spec đều không phải sửa engine. Code: <code>src/guideline/extract.py</code> (dùng lại backend V1 Guideline Assistant) và <code>src/features/guideline_rules.py</code>.</p>
+
+<h2 id="score">6. Mô hình chấm điểm</h2>
+<div class="grid">
+  <div class="card"><h3>Bậc 1 · Rule</h3>
+  <p>Tổng có trọng số các tín hiệu, chuẩn hoá 0–100. Trọng số lấy từ <code>configs/weights.yaml</code> và chỉ tinh chỉnh trên val. Hoà điểm thì xếp theo <code>image_id</code>.</p></div>
+  <div class="card"><h3>Bậc 2 · Rule + detector</h3>
+  <p>Thêm các tín hiệu ở 5.2 và 5.3. Bậc này dự kiến tăng recall nhiều nhất, vì là bậc duy nhất bắt được lỗi xoá nhãn.</p></div>
+  <div class="card"><h3>Bậc 3 · LightGBM</h3>
+  <ul>
+    <li>Mục tiêu <code>binary</code>: ảnh có lỗi hay không. Mất cân bằng lớp (15/85) xử lý bằng <code>scale_pos_weight</code>.</li>
+    <li>Đặc trưng: các tín hiệu ở mục 5, kèm số object, thống kê conf, ngữ cảnh.</li>
+    <li>Model nông (<code>num_leaves</code> 15–31, early stopping trên val) vì dữ liệu chỉ có 6k ảnh.</li>
+    <li>Có thể thử <code>lambdarank</code>, nhưng chỉ giữ nếu recall@20% trên val tăng thật.</li>
+    <li>Nhãn reviewer có <code>sample_weight</code> = <code>real_label_weight</code>.</li>
+  </ul></div>
+</div>
+<div class="note"><strong>Lý do hiển thị cho reviewer:</strong> lấy từ bằng chứng cấp object (box nào, detector nói gì, rule nào). Với GBM, dùng <code>pred_contrib</code> để chọn <em>nhóm</em> tín hiệu đóng góp nhiều nhất, rồi lấy câu lý do của object tương ứng trong nhóm đó. Không đưa số SHAP thô cho reviewer.</div>
+
+<h2 id="learn">7. Học lại từ reviewer</h2>
+<ul>
+  <li><strong>Học theo đợt, không học online:</strong> cứ đủ 50 nhãn mới hoặc khi người dùng bấm nút thì train lại GBM. Model mới chỉ được thay vào nếu recall@20% trên val ≥ model cũ − 0.005.</li>
+  <li><strong>Phiên bản:</strong> <code>model_version</code> = hash của (model, config, seed, số nhãn). Muốn rollback thì trỏ về bản cũ.</li>
+  <li><strong>Chống tự củng cố:</strong> cứ 10 ảnh trong hàng đợi chèn 1 ảnh audit lấy ngẫu nhiên từ nửa dưới (gần với chiến lược ε-greedy).</li>
+  <li><strong>Hiệu chỉnh lệch mẫu:</strong> ảnh trong top được review nhiều hơn hẳn phần đuôi. Khi ước lượng tổng số lỗi, nhân mỗi ảnh audit với nghịch đảo xác suất được chọn (Horvitz–Thompson). Không cộng thô.</li>
+  <li><strong>Bằng chứng chính:</strong> mô phỏng reviewer trên tập test qua 10 vòng, mỗi vòng xem top 5%. Vẽ đường cong học so với trường hợp không học.</li>
+</ul>
+
+<h2 id="eval">8. Đánh giá</h2>
+<div class="tbl"><table>
+<tr><th>Chỉ số</th><th>Cách tính</th><th>Ghi chú</th></tr>
+<tr><td>Recall@20%</td><td>Theo <strong>ảnh</strong> và theo <strong>lỗi có trọng số</strong> (xoá nhãn 1.0, đổi class 1.0, box giả 0.6, dịch 0.3, co/giãn 0.3)</td><td>Q5: trọng số theo object là chỉ số chính</td></tr>
+<tr><td>Top 20% theo thời gian</td><td>Cắt hàng đợi theo tổng thời gian review ước tính (giây/object × số object), không chỉ theo số ảnh</td><td>Ảnh rủi ro cao thường đông object nên xem lâu hơn</td></tr>
+<tr><td>Time saved</td><td><code>1 − n_queue(80% recall) / n_random(80% recall)</code>; random lấy trung bình 20 seed</td><td>Viết dạng "với ngân sách X giờ, tỉ lệ lỗi sót giảm từ A% xuống B%"</td></tr>
+<tr><td>Precision@K, NDCG, gain curve</td><td>Tính chuẩn</td><td>So 5 phương pháp: random, thứ tự file, rule, rule + detector, GBM</td></tr>
+<tr><td>Khoảng tin cậy</td><td>Bootstrap 1000 lần theo ảnh, báo CI 95%</td><td>Chênh 2 điểm phần trăm mà CI chồng nhau thì chưa phải cải thiện</td></tr>
+<tr><td>Lỗi còn sót dưới vạch cắt</td><td>Audit ngẫu nhiên 5% phần đuôi, CI Wilson</td><td>So với mục tiêu ≤ 2% object (Q20)</td></tr>
+<tr><td>Lỗi thật</td><td>150–200 ảnh (một nửa từ top, một nửa ngẫu nhiên), 2 người kiểm, đo Cohen's kappa</td><td>Thước đo cuối cùng; lỗi tiêm chỉ dùng lúc phát triển</td></tr>
+</table></div>
+<p><strong>Tái lập:</strong> mỗi lần chạy ghi một dòng vào <code>reports/results.jsonl</code> gồm commit, seed, hash config, split và metric. Không cần MLflow cho quy mô này.</p>
+
+<h2 id="ui">9. Giao diện review</h2>
+<div class="grid">
+  <div class="card"><h3>Chính: CVAT + extension <span class="tag t-use">Dùng</span></h3>
+  <ul>
+    <li>FastAPI chỉ bind <code>127.0.0.1</code>. Endpoint: <code>/queue</code>, <code>/image/{id}</code>, <code>/review</code>, <code>/retrain</code>, <code>/model</code>.</li>
+    <li>SQLite bật chế độ WAL; mỗi lượt review lưu verdict, thời gian xem và <code>model_version</code>.</li>
+    <li>Chrome MV3 side panel viết bằng JS thuần, mở đúng frame trong CVAT qua URL. Không chèn vào DOM của CVAT.</li>
+    <li>Dùng lại khung của V1 Guideline Assistant.</li>
+  </ul></div>
+  <div class="card"><h3>Phụ: FiftyOne <span class="tag t-opt">Tuỳ chọn</span></h3>
+  <ul>
+    <li>Dùng để nhóm dev phân tích lỗi: lọc ảnh theo tín hiệu, xem GT và dự đoán chồng lên nhau.</li>
+    <li>Rất hợp cho buổi kiểm tay 150–200 ảnh.</li>
+    <li>Không thay CVAT trong quy trình của reviewer, vì nhóm đang làm việc trên CVAT.</li>
+  </ul></div>
+</div>
+
+<h2 id="skip">10. Cố ý không làm trong đợt này</h2>
+<div class="tbl"><table>
+<tr><th>Hạng mục</th><th>Lý do</th></tr>
+<tr><td>VLM chạy trên toàn bộ 10k ảnh</td><td>Tốn GPU, khó đánh giá. VLM chỉ chạy trên top 30% ở Vòng 4, và bị cắt đầu tiên nếu trễ hoặc GPU chưa sửa.</td></tr>
+<tr><td>Fine-tune detector, ensemble nhiều model</td><td>Mất tính độc lập và tốn thời gian.</td></tr>
+<tr><td>Thư viện <code>shap</code>, MLflow, Docker, Postgres, MinIO</td><td>Quá nặng so với quy mô. Đã có thiết kế trong <code>DEPLOYMENT.md</code>.</td></tr>
+<tr><td>Học online sau từng cú bấm</td><td>Không tái lập được và không rollback được.</td></tr>
+</table></div>
+
+<h2 id="conflicts">11. Đề xuất chốt các mâu thuẫn</h2>
+<div class="tbl"><table>
+<tr><th>Điểm</th><th>Đề xuất</th></tr>
+<tr><td>Detector</td><td><strong>RT-DETR</strong> (theo Q15), bỏ YOLOv8n vì AGPL</td></tr>
+<tr><td>Công cụ review</td><td><strong>CVAT + extension</strong> cho reviewer; FiftyOne chỉ dùng nội bộ lúc phát triển</td></tr>
+<tr><td>Kiểm tay</td><td><strong>150–200 ảnh × 2 người</strong> (500 ảnh mất khoảng 25 giờ công, không vừa thời gian)</td></tr>
+<tr><td>LLM / VLM</td><td><strong>LLM đọc guideline</strong> làm ở Vòng 2 (theo Q14); <strong>VLM</strong> ở Vòng 4, cắt nếu trễ</td></tr>
+<tr><td>GPU</td><td>Sửa driver trước tiên; dự phòng chạy CPU qua đêm vì có cache</td></tr>
+<tr><td>Chấm theo guideline</td><td>Thêm phần lõi: LLM trích spec, người duyệt, lọc dự đoán theo spec, rule ID dẫn về trang guideline</td></tr>
+</table></div>
+
+<footer>Bản đề xuất ngày 11/10/2026, dựa trên <code>M13_TOM_TAT.md</code> và repo <code>m13-reviewer-prioritization</code>. Các ước tính thời gian chạy chưa được đo; đo thật ở D5 rồi cập nhật lại.</footer>
+</main>
+</body>
+</html>

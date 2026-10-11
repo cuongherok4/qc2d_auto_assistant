@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M13 Quy trình QC</title>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1d1d1b; --muted:#6a675f;
+  --border:#cfcbc0; --accent:#2f5d8a; --accent-soft:#e3ecf5;
+  --ok:#2e7d4f; --ok-soft:#e2f2e8; --warn:#9a6a00; --warn-soft:#fbf0d6; --bad:#b03a3a; --bad-soft:#f7e3e3;
+  --img:#2b3140;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#161614; --surface:#1f1f1c; --surface-2:#272723; --text:#ecebe6; --muted:#a6a49c;
+    --border:#4a4943; --accent:#8fb6dd; --accent-soft:#22303d;
+    --ok:#7cc79a; --ok-soft:#1e3127; --warn:#e3b95a; --warn-soft:#352c17; --bad:#e58c8c; --bad-soft:#3a2222;
+    --img:#0e1118;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161614; --surface:#1f1f1c; --surface-2:#272723; --text:#ecebe6; --muted:#a6a49c;
+  --border:#4a4943; --accent:#8fb6dd; --accent-soft:#22303d;
+  --ok:#7cc79a; --ok-soft:#1e3127; --warn:#e3b95a; --warn-soft:#352c17; --bad:#e58c8c; --bad-soft:#3a2222;
+  --img:#0e1118;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:960px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:2rem;line-height:1.2;margin:0 0 8px}
+h2{font-size:1.35rem;margin:56px 0 8px;padding-top:12px;border-top:1px solid var(--border)}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:1.05rem;max-width:720px}
+.fig{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin:16px 0;overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:640px;height:auto}
+.cap{color:var(--muted);font-size:.88rem;margin-top:4px}
+ol,ul{padding-left:22px}
+li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0}
+.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:20px 0 0}
+nav a{font-size:.85rem;color:var(--accent);text-decoration:none;border:1px solid var(--border);background:var(--surface);padding:4px 10px;border-radius:999px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+
+/* SVG */
+svg text{fill:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px}
+svg .t-s{font-size:12.5px;fill:var(--muted)}
+svg .t-b{font-weight:600}
+svg .t-n{font-weight:700;fill:var(--accent)}
+svg .bx{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
+svg .bx-a{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+svg .bx-ok{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.5}
+svg .bx-w{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.5}
+svg .bx-bad{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .ar{stroke:var(--muted);stroke-width:1.6;fill:none;marker-end:url(#arr)}
+svg .ar-d{stroke:var(--accent);stroke-width:1.6;fill:none;stroke-dasharray:6 5;marker-end:url(#arrA)}
+svg .mk{fill:var(--muted)}
+svg .mkA{fill:var(--accent)}
+svg .lbl{font-size:12.5px;fill:var(--muted);font-weight:600}
+svg .lblA{font-size:12.5px;fill:var(--accent);font-weight:600}
+svg .img{fill:var(--img)}
+svg .gt{fill:none;stroke:#4cc38a;stroke-width:2}
+svg .gt-bad{fill:none;stroke:#f2b84b;stroke-width:2.5}
+svg .pred{fill:none;stroke:#ff6b6b;stroke-width:2.5;stroke-dasharray:5 4}
+svg .grid{stroke:var(--border);stroke-width:1}
+svg .rnd{stroke:var(--muted);stroke-width:2;fill:none;stroke-dasharray:6 5}
+svg .sys{stroke:var(--accent);stroke-width:3;fill:none}
+svg .tl{stroke:var(--border);stroke-width:4}
+svg .dot{fill:var(--accent)}
+svg .dot-late{fill:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+
+<h1>M13: quy trình QC và quy trình xây dựng</h1>
+<p class="lead">Trang này chỉ nói về luồng, không đi sâu vào công nghệ. Phần 1–2 mô tả một lần QC khi hệ thống đã chạy. Phần 3 nói guideline của batch được đưa vào và biến thành luật kiểm tra thế nào. Phần 4–5 mô tả cách nhóm xây và đo hệ thống trong 2 tuần. Phần 6 nói LLM/VLM nằm ở đâu.</p>
+<nav><a href="#qc">1. Một lần QC</a><a href="#score">2. Chấm 1 ảnh</a><a href="#guideline">3. Guideline → luật</a><a href="#measure">4. Đo hệ thống</a><a href="#build">5. Xây dựng</a><a href="#ai">6. LLM / VLM</a></nav>
+
+<!-- reusable markers -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+    <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mkA"/></marker>
+  </defs>
+</svg>
+
+<!-- ============ 1 ============ -->
+<h2 id="qc">1. Một lần QC cho một batch</h2>
+<p>Ví dụ: annotator vừa gán xong một batch 1.000 ảnh. Trước đây reviewer phải xem cả 1.000 ảnh. Với hệ thống này:</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 570" role="img" aria-label="Sơ đồ một lần QC cho một batch">
+  <!-- row 1 -->
+  <rect class="bx" x="20" y="30" width="250" height="84" rx="10"/>
+  <text x="38" y="58" class="t-n">①</text><text x="60" y="58" class="t-b">Batch mới gán xong</text>
+  <text x="38" y="80" class="t-s">Export nhãn từ CVAT</text>
+  <text x="38" y="99" class="t-s">ví dụ 1.000 ảnh</text>
+
+  <rect class="bx-a" x="325" y="30" width="250" height="84" rx="10"/>
+  <text x="343" y="58" class="t-n">②</text><text x="365" y="58" class="t-b">Máy chấm điểm từng ảnh</text>
+  <text x="343" y="80" class="t-s">3 phép kiểm tra, xem phần 2</text>
+  <text x="343" y="99" class="t-s">vài phút, không cần người</text>
+
+  <rect class="bx" x="630" y="30" width="250" height="84" rx="10"/>
+  <text x="648" y="58" class="t-n">③</text><text x="670" y="58" class="t-b">Hàng đợi xếp theo điểm</text>
+  <text x="648" y="80" class="t-s">điểm 0–100, ảnh nguy hiểm lên đầu</text>
+  <text x="648" y="99" class="t-s">mỗi ảnh kèm 3 lý do</text>
+
+  <path class="ar" d="M270 72 H322"/>
+  <path class="ar" d="M575 72 H627"/>
+
+  <!-- split -->
+  <path class="ar" d="M755 114 V150 H320 V187"/>
+  <path class="ar" d="M755 150 H700 V187"/>
+  <text x="120" y="143" class="lbl">Top 20% = 200 ảnh + audit</text>
+  <text x="770" y="143" class="lbl">80% còn lại</text>
+
+  <!-- row 2 -->
+  <rect class="bx-ok" x="180" y="190" width="280" height="84" rx="10"/>
+  <text x="198" y="218" class="t-n">④</text><text x="220" y="218" class="t-b">Reviewer xem theo thứ tự</text>
+  <text x="198" y="240" class="t-s">đọc lý do → nhìn đúng box đó</text>
+  <text x="198" y="259" class="t-s">bấm: Lỗi thật / Bot nhầm / Bỏ qua</text>
+
+  <rect class="bx-w" x="560" y="190" width="280" height="84" rx="10"/>
+  <text x="578" y="218" class="t-n">⑥</text><text x="600" y="218" class="t-b">Kiểm ngẫu nhiên 5% phần đuôi</text>
+  <text x="578" y="240" class="t-s">khoảng 40 ảnh, chọn ngẫu nhiên</text>
+  <text x="578" y="259" class="t-s">→ ước lượng còn sót bao nhiêu lỗi</text>
+
+  <!-- row 3 -->
+  <path class="ar" d="M250 274 V312 H145 V347"/>
+  <text x="152" y="305" class="lbl">Lỗi thật</text>
+  <path class="ar" d="M380 274 V312 H400 V347"/>
+  <text x="408" y="305" class="lbl">mọi verdict</text>
+
+  <rect class="bx" x="20" y="350" width="250" height="84" rx="10"/>
+  <text x="38" y="378" class="t-n">⑤</text><text x="60" y="378" class="t-b">Sửa nhãn trong CVAT</text>
+  <text x="38" y="400" class="t-s">bấm vào ảnh là mở đúng frame</text>
+  <text x="38" y="419" class="t-s">sửa xong là sạch</text>
+
+  <rect class="bx-a" x="290" y="350" width="220" height="84" rx="10"/>
+  <text x="308" y="378" class="t-n">⑦</text><text x="330" y="378" class="t-b">Lưu verdict, học lại</text>
+  <text x="308" y="400" class="t-s">cứ 50 verdict mới thì</text>
+  <text x="308" y="419" class="t-s">train lại model chấm điểm</text>
+
+  <!-- feedback loop -->
+  <path class="ar-d" d="M490 350 V117"/>
+  <text x="498" y="176" class="lblA">học lại → model mới</text>
+
+  <!-- decision -->
+  <path class="ar" d="M700 274 V342"/>
+  <polygon class="bx" points="700,345 810,392 700,439 590,392"/>
+  <text x="700" y="388" text-anchor="middle" class="t-b">Lỗi sót</text>
+  <text x="700" y="406" text-anchor="middle" class="t-b">≤ 2%?</text>
+
+  <path class="ar" d="M590 392 H530 V245 H463"/>
+  <text x="537" y="300" class="lbl">Chưa đạt:</text>
+  <text x="537" y="316" class="lbl">xem tiếp</text>
+  <text x="537" y="332" class="lbl">10% kế</text>
+
+  <path class="ar" d="M700 439 V487"/>
+  <text x="710" y="468" class="lbl">Đạt</text>
+  <rect class="bx-ok" x="590" y="490" width="220" height="60" rx="10"/>
+  <text x="608" y="517" class="t-n">⑧</text><text x="630" y="517" class="t-b">Duyệt batch</text>
+  <text x="608" y="537" class="t-s">kèm số lỗi sót ước lượng</text>
+</svg>
+</div>
+
+<ol>
+  <li><strong>Máy làm phần nặng (①→③):</strong> chấm cả 1.000 ảnh, không cần người.</li>
+  <li><strong>Người chỉ xem phần đáng xem (④→⑤):</strong> 200 ảnh đầu hàng đợi. Lý do chỉ ra box nào cần nhìn nên mỗi ảnh xem nhanh hơn.</li>
+  <li><strong>Không tin mù quáng phần đuôi (⑥):</strong> kiểm ngẫu nhiên 5% trong 800 ảnh còn lại. Nếu tỉ lệ lỗi sót vượt 2% thì xem thêm.</li>
+  <li><strong>Mỗi lần QC làm máy giỏi hơn (⑦):</strong> mỗi lần reviewer bấm "Lỗi thật" hay "Bot nhầm" là thêm dữ liệu để học.</li>
+</ol>
+<div class="note">Ảnh audit trong ④ là vài ảnh ngẫu nhiên từ nửa dưới hàng đợi, trộn vào để reviewer không chỉ thấy những ảnh máy đã tin là xấu. Thiếu bước này, model chỉ học từ chính phán đoán của nó.</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="score">2. Bên trong bước ②: chấm điểm một ảnh</h2>
+<p>Mỗi ảnh đi qua 3 phép kiểm tra độc lập. Mỗi phép trả về một mức nghi ngờ từ 0 đến 1 và một câu lý do có con số. Ba kết quả được gộp lại thành điểm 0–100.</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 440" role="img" aria-label="Ví dụ chấm điểm một ảnh">
+  <!-- mock image -->
+  <text x="20" y="24" class="t-b">Ảnh ví dụ · 14 box · ban đêm</text>
+  <rect class="img" x="20" y="36" width="250" height="141" rx="6"/>
+  <line x1="20" y1="120" x2="270" y2="120" stroke="#444b5c" stroke-width="1"/>
+  <rect class="gt" x="40" y="98" width="52" height="34"/>
+  <rect class="gt" x="110" y="102" width="40" height="26"/>
+  <rect class="gt-bad" x="160" y="108" width="10" height="7"/>
+  <rect class="gt" x="200" y="96" width="56" height="38"/>
+  <rect class="pred" x="236" y="58" width="16" height="40"/>
+  <rect class="gt" x="60" y="50" width="6" height="12"/>
+  <text x="20" y="198" class="t-s">▭ xanh: nhãn người gán</text>
+  <text x="20" y="216" class="t-s">▭ vàng: box nghi sai (car #7 quá nhỏ)</text>
+  <text x="20" y="234" class="t-s">┅ đỏ: máy thấy người đi bộ, không có nhãn</text>
+
+  <!-- checks -->
+  <path class="ar" d="M270 106 H300 V60 H322"/>
+  <path class="ar" d="M300 106 V170 H322"/>
+  <path class="ar" d="M300 170 V280 H322"/>
+
+  <rect class="bx" x="325" y="20" width="330" height="80" rx="10"/>
+  <text x="343" y="46" class="t-b">A · Hình dạng box có lạ không?</text>
+  <text x="343" y="67" class="t-s">so với các box cùng loại trong toàn bộ dữ liệu</text>
+  <text x="343" y="87" class="t-s">→ car #7 cao 7px, nhỏ hơn 98% car khác</text>
+
+  <rect class="bx" x="325" y="130" width="330" height="80" rx="10"/>
+  <text x="343" y="156" class="t-b">B · Máy tự phát hiện rồi so với nhãn</text>
+  <text x="343" y="177" class="t-s">một detector độc lập chạy trên ảnh</text>
+  <text x="343" y="197" class="t-s">→ thấy 1 pedestrian (tin cậy 0.91) không có nhãn</text>
+
+  <rect class="bx" x="325" y="240" width="330" height="80" rx="10"/>
+  <text x="343" y="266" class="t-b">C · Có đúng guideline của batch?</text>
+  <text x="343" y="287" class="t-s">luật do LLM trích từ guideline, người đã duyệt</text>
+  <text x="343" y="307" class="t-s">→ [R1] traffic light cao 8px, ngưỡng 10px</text>
+
+  <!-- values -->
+  <text x="668" y="66" class="t-n">0.7</text>
+  <text x="668" y="176" class="t-n">0.9</text>
+  <text x="668" y="286" class="t-n">0.4</text>
+
+  <path class="ar" d="M700 60 H720 V170 H742"/>
+  <path class="ar" d="M700 170 H742"/>
+  <path class="ar" d="M700 280 H720 V170"/>
+
+  <rect class="bx-a" x="745" y="110" width="140" height="120" rx="10"/>
+  <text x="815" y="140" text-anchor="middle" class="t-b">Gộp điểm</text>
+  <text x="815" y="180" text-anchor="middle" style="font-size:30px;font-weight:700;fill:var(--accent)">82</text>
+  <text x="815" y="203" text-anchor="middle" class="t-s">/100 · hạng 14</text>
+
+  <!-- output card -->
+  <rect class="bx-ok" x="325" y="350" width="560" height="78" rx="10"/>
+  <text x="343" y="374" class="t-b">Reviewer nhìn thấy trong hàng đợi:</text>
+  <text x="343" y="395" class="t-s">1. Máy thấy pedestrian (0.91) ở góc phải, không có nhãn</text>
+  <text x="343" y="414" class="t-s">2. car #7 cao 7px, nhỏ hơn 98% car  ·  3. [R1] traffic light 8px &lt; 10px</text>
+  <path class="ar" d="M815 230 V347"/>
+</svg>
+</div>
+
+<ul>
+  <li><strong>A</strong> bắt được box bị co/giãn, box giả, và một phần lỗi đổi class. Không bắt được box bị xoá, vì không còn box để kiểm.</li>
+  <li><strong>B</strong> là phép mạnh nhất và là phép duy nhất bắt được <em>nhãn bị sót</em>. Máy cũng có thể sai, nên đây chỉ là một tín hiệu, không phải kết luận.</li>
+  <li><strong>C</strong> giải quyết chuyện cùng một box 18px có thể đúng với guideline A nhưng sai với guideline B. Luật của C không viết sẵn trong code mà lấy từ guideline của từng batch (xem mục 3).</li>
+  <li><strong>Cách gộp:</strong> lúc đầu là cộng có trọng số (rule). Khi đã có dữ liệu thì để model học cách gộp (GBM).</li>
+</ul>
+
+<!-- ============ 3 ============ -->
+<h2 id="guideline">3. Guideline đi vào hệ thống thế nào</h2>
+<p>Phép C chỉ so được khi đã có luật. Luật không viết sẵn trong code mà lấy từ guideline của từng batch: <strong>LLM đọc guideline một lần, người duyệt, rồi máy dùng luật đã duyệt để so với nhãn</strong>. Đổi batch, đổi guideline thì chỉ đổi file luật, không sửa code.</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 520" role="img" aria-label="Guideline được LLM đọc, người duyệt, rồi chia thành luật đo được và luật nhìn ảnh">
+  <text x="20" y="24" class="t-s">Ô vàng = LLM/VLM · ô xanh = chạy bằng code</text>
+
+  <!-- row 1 -->
+  <text x="20" y="46" class="lbl">ĐẦU BATCH · 1 LẦN</text>
+  <rect class="bx" x="20" y="56" width="200" height="84" rx="10"/>
+  <text x="36" y="84" class="t-b">Guideline batch</text>
+  <text x="36" y="106" class="t-s">file DOCX / PDF</text>
+  <text x="36" y="124" class="t-s">tách văn bản theo trang</text>
+
+  <rect class="bx-w" x="260" y="56" width="300" height="84" rx="10"/>
+  <text x="276" y="84" class="t-n">①</text><text x="296" y="84" class="t-b">LLM đọc guideline</text>
+  <text x="276" y="106" class="t-s">trả JSON theo schema cố định</text>
+  <text x="276" y="124" class="t-s">mỗi luật kèm câu trích gốc + số trang</text>
+
+  <rect class="bx" x="600" y="56" width="280" height="84" rx="10"/>
+  <text x="616" y="84" class="t-n">②</text><text x="636" y="84" class="t-b">Người phụ trách duyệt</text>
+  <text x="616" y="106" class="t-s">so từng luật với câu trích gốc,</text>
+  <text x="616" y="124" class="t-s">sửa chỗ sai rồi ký approved_by</text>
+
+  <path class="ar" d="M220 98 H257"/><path class="ar" d="M560 98 H597"/>
+  <path class="ar" d="M740 140 V162 H155 V187"/>
+  <path class="ar" d="M450 162 V187"/>
+  <path class="ar" d="M745 162 V187"/>
+
+  <!-- row 2: three kinds -->
+  <rect class="bx-ok" x="20" y="190" width="270" height="100" rx="10"/>
+  <text x="36" y="216" class="t-b">Luật đo được · R1, R2…</text>
+  <text x="36" y="238" class="t-s">ngưỡng chiều cao px, class được phép,</text>
+  <text x="36" y="256" class="t-s">class gộp, thuộc tính bắt buộc</text>
+  <text x="36" y="276" class="lblA">→ configs/guidelines/&lt;id&gt;.yaml</text>
+
+  <rect class="bx-w" x="315" y="190" width="270" height="100" rx="10"/>
+  <text x="331" y="216" class="t-b">Luật phải nhìn ảnh · V1, V2…</text>
+  <text x="331" y="238" class="t-s">"không gán đèn đường, đèn xe là</text>
+  <text x="331" y="256" class="t-s">traffic light"</text>
+  <text x="331" y="276" class="lblA">→ câu hỏi cho VLM</text>
+
+  <rect class="bx-bad" x="610" y="190" width="270" height="100" rx="10"/>
+  <text x="626" y="216" class="t-b">Guideline không ghi rõ</text>
+  <text x="626" y="238" class="t-s">LLM để trống, không tự đoán</text>
+  <text x="626" y="256" class="t-s">vd: không có ngưỡng cho traffic sign</text>
+  <text x="626" y="276" class="lblA">→ cờ cảnh báo</text>
+
+  <path class="ar" d="M155 290 V327"/><path class="ar" d="M450 290 V327"/><path class="ar" d="M745 290 V327"/>
+
+  <!-- row 3: use -->
+  <text x="20" y="318" class="lbl">MỖI ẢNH</text>
+  <rect class="bx-a" x="20" y="330" width="270" height="84" rx="10"/>
+  <text x="36" y="358" class="t-n">③</text><text x="56" y="358" class="t-b">Rule engine = phép C</text>
+  <text x="36" y="380" class="t-s">chạy 100% ảnh, vài giây,</text>
+  <text x="36" y="398" class="t-s">chạy lại luôn ra cùng kết quả</text>
+
+  <rect class="bx-w" x="315" y="330" width="270" height="84" rx="10"/>
+  <text x="331" y="358" class="t-n">④</text><text x="351" y="358" class="t-b">VLM = phép D</text>
+  <text x="331" y="380" class="t-s">chỉ top 30% ảnh; hỏi theo luật V,</text>
+  <text x="331" y="398" class="t-s">kèm câu trích + vùng box nghi vấn</text>
+
+  <rect class="bx" x="610" y="330" width="270" height="84" rx="10"/>
+  <text x="626" y="358" class="t-b">Sửa guideline trước khi gán</text>
+  <text x="626" y="380" class="t-s">báo trưởng nhóm ngay đầu batch,</text>
+  <text x="626" y="398" class="t-s">đúng bài học P-001 tuần 1</text>
+
+  <path class="ar" d="M155 414 V447"/><path class="ar" d="M450 414 V447"/>
+
+  <!-- row 4: reason -->
+  <rect class="bx-ok" x="20" y="450" width="860" height="62" rx="10"/>
+  <text x="36" y="474" class="t-b">Lý do reviewer thấy, luôn dẫn về rule ID và trang guideline:</text>
+  <text x="36" y="496" class="t-s">[R1] traffic light cao 8px, ngưỡng 10px (tr.3) · [V1] VLM: vùng này là đèn đường (tr.5)</text>
+</svg>
+</div>
+
+<h3 style="font-size:1.05rem;margin:24px 0 8px">Ví dụ LLM đọc một đoạn guideline</h3>
+<div class="fig" style="padding:14px 16px">
+<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;margin:0;white-space:pre-wrap">Đoạn gốc (tr.3): "Không cần gán xe ở xa có chiều cao dưới 15 pixel. Đèn giao thông
+                  chỉ gán khi cao từ 10 pixel và nhìn rõ đèn, không gán đèn đường."
+LLM trả:
+  - {id: R1, check: below_min_height, category: car,           thr: 15, page: 3,
+     quote: "Không cần gán xe ở xa có chiều cao dưới 15 pixel"}
+  - {id: R1, check: below_min_height, category: traffic light, thr: 10, page: 3, quote: "..."}
+  - {id: V1, kind: visual, category: traffic light, page: 3,
+     question: "Vật trong khung là đèn giao thông hay đèn đường / đèn xe?", quote: "..."}
+  - {category: traffic sign, thr: null, flag: "guideline không ghi ngưỡng"}</pre>
+</div>
+
+<h3 style="font-size:1.05rem;margin:24px 0 8px">Vì sao LLM chỉ đọc guideline, không trực tiếp so từng ảnh</h3>
+<ul>
+  <li><strong>Tốn:</strong> đọc guideline chỉ mất một lần mỗi batch. Hỏi LLM trên 10k ảnh × khoảng 18 box thì tốn hàng giờ.</li>
+  <li><strong>Tái lập:</strong> cùng một ảnh, LLM có thể trả lời khác nhau giữa hai lần chạy, nên không đo recall nghiêm túc được. Luật đã thành YAML thì lần chạy nào cũng ra cùng kết quả.</li>
+  <li><strong>Kiểm được:</strong> mỗi luật trỏ về câu trích gốc, người duyệt nhìn là biết LLM có đọc sai không.</li>
+</ul>
+
+<h3 style="font-size:1.05rem;margin:24px 0 8px">Spec còn được dùng ở những bước khác</h3>
+<ul>
+  <li><strong>Lọc dự đoán của detector</strong> (phép B) trước khi so với nhãn: bỏ class không có trong spec, bỏ box thấp hơn ngưỡng. Nếu không lọc, máy sẽ báo "thiếu box" cho cả những object mà guideline cho phép bỏ qua.</li>
+  <li><strong>Class gộp</strong> (vd bus → truck) áp cho cả nhãn lẫn dự đoán ngay sau khi nạp dữ liệu.</li>
+  <li><strong>Tiêm lỗi</strong> theo từng guideline, vì cái gì tính là lỗi phụ thuộc vào guideline.</li>
+  <li><strong>Ghi phiên bản</strong> <code>bdd_v1@1.0.0</code> vào hàng đợi và vào bảng kết quả, để biết mỗi con số được đo theo guideline nào.</li>
+</ul>
+
+<div class="fig" style="padding:14px 16px">
+<p style="margin:0 0 6px"><strong>Đặt vào code</strong></p>
+<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;margin:0;white-space:pre-wrap">src/guideline/extract.py            ① đọc DOCX/PDF, gọi LLM, kiểm schema (dùng lại backend V1)
+configs/guidelines/drafts/&lt;id&gt;.yaml  spec nháp chờ duyệt
+configs/guidelines/&lt;id&gt;.yaml         ② spec đã duyệt (có approved_by, version)
+configs/batches.yaml                gắn batch → guideline, vd batch_01: bdd_v1@1.0.0
+src/features/guideline_rules.py     ③ rule engine + lọc dự đoán theo spec
+src/features/vlm_check.py           ④ VLM kiểm luật V trên top 30%
+
+python -m src.cli guideline extract guidelines/batch_01.docx   # sinh spec nháp
+python -m src.cli score --guideline configs/guidelines/bdd_v1.yaml</pre>
+</div>
+
+<div class="note warn"><strong>Điều kiện để bước LLM đáng tin:</strong> temperature 0, ép trả JSON theo schema, lưu cache câu trả lời, và <strong>spec chưa duyệt thì không dùng để chấm</strong>. Chưa chốt: LLM chạy local hay qua API. Nên dùng cái V1 Guideline Assistant đang dùng.</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="measure">4. Làm sao biết hệ thống tốt: cố tình làm hỏng nhãn</h2>
+<p>Nhãn thật không cho biết ảnh nào sai, nên nhóm tự tạo đáp án: làm hỏng một phần nhãn rồi xem hệ thống có tìm lại được không.</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 330" role="img" aria-label="Quy trình đo bằng lỗi tiêm">
+  <rect class="bx" x="20" y="30" width="190" height="90" rx="10"/>
+  <text x="38" y="58" class="t-b">Nhãn gốc BDD100K</text>
+  <text x="38" y="80" class="t-s">10.000 ảnh</text>
+  <text x="38" y="99" class="t-s">coi như sạch</text>
+
+  <rect class="bx-bad" x="245" y="30" width="200" height="90" rx="10"/>
+  <text x="263" y="58" class="t-b">Cố tình làm hỏng</text>
+  <text x="263" y="80" class="t-s">15% ảnh, mỗi ảnh 1–3 lỗi</text>
+  <text x="263" y="99" class="t-s">xoá, đổi class, dịch box…</text>
+
+  <rect class="bx-a" x="480" y="30" width="190" height="90" rx="10"/>
+  <text x="498" y="58" class="t-b">Hệ thống xếp hạng</text>
+  <text x="498" y="80" class="t-s">không được biết đáp án</text>
+  <text x="498" y="99" class="t-s">→ hàng đợi</text>
+
+  <rect class="bx-ok" x="705" y="30" width="175" height="90" rx="10"/>
+  <text x="723" y="58" class="t-b">Chấm bài</text>
+  <text x="723" y="80" class="t-s">top 20% chứa</text>
+  <text x="723" y="99" class="t-s">bao nhiêu % lỗi?</text>
+
+  <path class="ar" d="M210 75 H242"/>
+  <path class="ar" d="M445 75 H477"/>
+  <path class="ar" d="M670 75 H702"/>
+
+  <path class="ar-d" d="M345 120 V150 H792 V123"/>
+  <text x="440" y="168" class="lblA">đáp án: ảnh nào hỏng, hỏng gì (giấu khỏi hệ thống)</text>
+
+  <!-- gain curve -->
+  <text x="20" y="208" class="t-b">Cách đọc kết quả (hình minh hoạ, chưa có số thật)</text>
+  <g transform="translate(70,220)">
+    <line class="grid" x1="0" y1="0" x2="0" y2="90"/>
+    <line class="grid" x1="0" y1="90" x2="300" y2="90"/>
+    <line class="grid" x1="60" y1="0" x2="60" y2="90" stroke-dasharray="3 3"/>
+    <path class="rnd" d="M0 90 L300 0"/>
+    <path class="sys" d="M0 90 C20 40, 50 18, 60 14 S200 4, 300 0"/>
+    <text x="64" y="12" class="lblA">hệ thống: ~85%</text>
+    <text x="64" y="78" class="lbl">ngẫu nhiên: 20%</text>
+    <text x="40" y="106" class="t-s">20%</text>
+    <text x="120" y="106" class="t-s">% ảnh đã xem →</text>
+    <text x="-58" y="10" class="t-s">% lỗi</text>
+    <text x="-58" y="25" class="t-s">bắt được</text>
+  </g>
+  <text x="420" y="240" class="t-s">• Đường càng vồng lên sớm thì hệ thống càng tốt.</text>
+  <text x="420" y="262" class="t-s">• Xem ngẫu nhiên 20% ảnh chỉ bắt được khoảng 20% lỗi.</text>
+  <text x="420" y="284" class="t-s">• So 5 cách: ngẫu nhiên, thứ tự file, rule,</text>
+  <text x="432" y="304" class="t-s">rule + detector, GBM.</text>
+</svg>
+</div>
+
+<div class="note warn"><strong>Lỗi tự tiêm chỉ là bài thi thử.</strong> Bài thi thật: lấy 150–200 ảnh (một nửa đầu hàng đợi, một nửa ngẫu nhiên), 2 người kiểm tay rồi đo xem hai người có đồng ý với nhau không. Con số cuối cùng trong báo cáo lấy từ tập này.</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="build">5. Quy trình xây dựng: 4 vòng, vòng nào cũng đo</h2>
+<p>Không xây hết rồi mới chạy. Mỗi vòng phải chạy được từ đầu đến cuối và có một dòng số trong bảng so sánh, rồi mới sang vòng sau.</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 300" role="img" aria-label="Ba vòng xây dựng">
+  <!-- loop -->
+  <text x="20" y="26" class="t-b">Mỗi vòng lặp cùng một nhịp</text>
+  <rect class="bx" x="20" y="40" width="120" height="44" rx="22"/><text x="80" y="67" text-anchor="middle">Viết</text>
+  <rect class="bx" x="170" y="40" width="120" height="44" rx="22"/><text x="230" y="67" text-anchor="middle">Chạy 10k ảnh</text>
+  <rect class="bx" x="320" y="40" width="120" height="44" rx="22"/><text x="380" y="67" text-anchor="middle">Đo recall@20%</text>
+  <rect class="bx" x="470" y="40" width="140" height="44" rx="22"/><text x="540" y="67" text-anchor="middle">Ghi vào bảng</text>
+  <path class="ar" d="M140 62 H167"/><path class="ar" d="M290 62 H317"/><path class="ar" d="M440 62 H467"/>
+  <path class="ar-d" d="M540 84 V104 H80 V87"/>
+  <text x="620" y="58" class="t-s">vòng sau phải hơn vòng trước,</text>
+  <text x="620" y="76" class="t-s">không hơn thì xem lại</text>
+
+  <!-- 4 rounds -->
+  <rect class="bx" x="20" y="140" width="200" height="140" rx="10"/>
+  <text x="36" y="168" class="t-n">Vòng 1 · Rule</text>
+  <text x="36" y="192" class="t-s">• nạp dữ liệu, tiêm lỗi</text>
+  <text x="36" y="212" class="t-s">• phép kiểm A</text>
+  <text x="36" y="232" class="t-s">• cộng điểm có trọng số</text>
+  <text x="36" y="252" class="t-s">• khung đo + gain curve</text>
+  <text x="36" y="272" class="lbl">Mốc 1</text>
+
+  <rect class="bx" x="240" y="140" width="200" height="140" rx="10"/>
+  <text x="256" y="168" class="t-n">Vòng 2 · + Detector</text>
+  <text x="256" y="192" class="t-s">• chạy detector, lưu kết quả</text>
+  <text x="256" y="212" class="t-s">• phép kiểm B</text>
+  <text x="256" y="232" class="t-s">• LLM đọc guideline → phép C</text>
+  <text x="256" y="252" class="t-s">• bắt đầu kiểm tay</text>
+  <text x="256" y="272" class="lbl">Mốc 2</text>
+
+  <rect class="bx" x="460" y="140" width="200" height="140" rx="10"/>
+  <text x="476" y="168" class="t-n">Vòng 3 · Học máy</text>
+  <text x="476" y="192" class="t-s">• model học cách gộp điểm</text>
+  <text x="476" y="212" class="t-s">• mô phỏng reviewer 10 vòng</text>
+  <text x="476" y="232" class="t-s">• bảng so sánh 5 cách</text>
+  <text x="476" y="252" class="t-s">• xong tập kiểm tay</text>
+  <text x="476" y="272" class="lbl">Mốc 3</text>
+
+  <rect class="bx-w" x="680" y="140" width="200" height="140" rx="10"/>
+  <text x="696" y="168" class="t-n">Vòng 4 · VLM</text>
+  <text x="696" y="192" class="t-s">• VLM xem lại top 30%</text>
+  <text x="696" y="212" class="t-s">• kiểm luật nhìn ảnh (V)</text>
+  <text x="696" y="232" class="t-s">• đo: có VLM vs không</text>
+  <text x="696" y="252" class="t-s">• LLM viết báo cáo batch</text>
+  <text x="696" y="272" class="lbl">Mốc 4</text>
+
+  <path class="ar" d="M220 210 H237"/><path class="ar" d="M440 210 H457"/><path class="ar" d="M660 210 H677"/>
+</svg>
+</div>
+
+<p>Sau 4 vòng mới làm phần cho người dùng: API, extension mở CVAT, pilot với thành viên để đo giây/ảnh, rồi viết báo cáo.</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 200" role="img" aria-label="Lịch đề xuất">
+  <text x="20" y="26" class="t-b">Lịch đề xuất 2 tuần: 11/10 → 25/10</text>
+  <line class="tl" x1="40" y1="90" x2="870" y2="90"/>
+  <circle class="dot" cx="60" cy="90" r="9"/>
+  <text x="60" y="66" text-anchor="middle" class="t-b">11–13/10</text>
+  <text x="60" y="118" text-anchor="middle" class="t-s">Vòng 1</text>
+  <text x="60" y="136" text-anchor="middle" class="t-s">→ Mốc 1</text>
+  <circle class="dot" cx="195" cy="90" r="9"/>
+  <text x="195" y="66" text-anchor="middle" class="t-b">14–15/10</text>
+  <text x="195" y="118" text-anchor="middle" class="t-s">Vòng 2</text>
+  <text x="195" y="136" text-anchor="middle" class="t-s">→ Mốc 2</text>
+  <circle class="dot" cx="335" cy="90" r="9"/>
+  <text x="335" y="66" text-anchor="middle" class="t-b">16–18/10</text>
+  <text x="335" y="118" text-anchor="middle" class="t-s">Vòng 3 + kiểm tay</text>
+  <text x="335" y="136" text-anchor="middle" class="t-s">→ Mốc 3</text>
+  <circle class="dot" cx="480" cy="90" r="9"/>
+  <text x="480" y="66" text-anchor="middle" class="t-b">19–21/10</text>
+  <text x="480" y="118" text-anchor="middle" class="t-s">Vòng 4 VLM</text>
+  <text x="480" y="136" text-anchor="middle" class="t-s">→ Mốc 4</text>
+  <circle class="dot" cx="625" cy="90" r="9"/>
+  <text x="625" y="66" text-anchor="middle" class="t-b">22–23/10</text>
+  <text x="625" y="118" text-anchor="middle" class="t-s">Extension + pilot</text>
+  <text x="625" y="136" text-anchor="middle" class="t-s">→ Mốc 5</text>
+  <circle class="dot" cx="790" cy="90" r="9"/>
+  <text x="790" y="66" text-anchor="middle" class="t-b">24–25/10</text>
+  <text x="790" y="118" text-anchor="middle" class="t-s">Báo cáo, video</text>
+  <text x="790" y="136" text-anchor="middle" class="t-s">→ Mốc 6</text>
+  <text x="20" y="180" class="t-s">Ngày kết thúc 25/10 là giả định từ "còn 2 tuần". LLM đọc guideline đã nằm ở Vòng 2. Nếu trễ: cắt VLM ở Vòng 4, giữ nguyên đánh giá.</text>
+</svg>
+</div>
+
+<div class="note"><strong>Việc phải xong trước khi bắt đầu Vòng 1:</strong> tải BDD100K (ảnh val + nhãn Detection 2020), sửa driver GPU (cần cho Vòng 2 và bắt buộc cho VLM ở Vòng 4), tạo repo git, và có ít nhất 1 file guideline mẫu (DOCX/PDF) để LLM đọc ở Vòng 2.</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="ai">6. LLM / VLM nằm ở đâu trong luồng</h2>
+<p>Nguyên tắc: <strong>LLM/VLM là trợ lý, không phải trọng tài.</strong> Chúng làm 3 việc mà rule và detector làm kém: đọc văn bản guideline, nhìn lại ảnh như người, và tóm tắt cho trưởng nhóm. Chúng không chạy trên 100% ảnh, không tự sửa nhãn, không ra quyết định cuối.</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 430" role="img" aria-label="Vị trí LLM và VLM trong luồng QC">
+  <text x="20" y="24" class="t-s">Ô vàng = LLM/VLM · ô xanh = phần đã có ở mục 1–2</text>
+
+  <!-- row 1: guideline -->
+  <text x="20" y="54" class="lbl">ĐẦU BATCH (1 lần)</text>
+  <rect class="bx" x="20" y="64" width="190" height="70" rx="10"/>
+  <text x="36" y="92" class="t-b">Guideline batch</text>
+  <text x="36" y="114" class="t-s">file DOCX / PDF</text>
+
+  <rect class="bx-w" x="250" y="64" width="240" height="70" rx="10"/>
+  <text x="266" y="92" class="t-b">① LLM đọc → bảng luật</text>
+  <text x="266" y="114" class="t-s">luật đo được (C) + luật nhìn ảnh (D)</text>
+
+  <rect class="bx" x="530" y="64" width="200" height="70" rx="10"/>
+  <text x="546" y="92" class="t-b">Người phụ trách duyệt</text>
+  <text x="546" y="114" class="t-s">sửa luật sai rồi mới dùng</text>
+
+  <path class="ar" d="M210 99 H247"/><path class="ar" d="M490 99 H527"/>
+  <path class="ar" d="M630 134 V160 H290 V197"/>
+  <text x="440" y="154" class="lbl">luật đã duyệt → phép kiểm C và D</text>
+
+  <!-- row 2: scoring -->
+  <text x="20" y="190" class="lbl">CHẤM ĐIỂM</text>
+  <rect class="bx" x="20" y="200" width="150" height="76" rx="10"/>
+  <text x="36" y="228" class="t-b">1.000 ảnh</text>
+  <text x="36" y="250" class="t-s">cả batch</text>
+
+  <rect class="bx-a" x="200" y="200" width="180" height="76" rx="10"/>
+  <text x="216" y="228" class="t-b">Phép A + B + C</text>
+  <text x="216" y="250" class="t-s">nhanh, chạy hết ảnh</text>
+
+  <rect class="bx-a" x="410" y="200" width="150" height="76" rx="10"/>
+  <text x="426" y="228" class="t-b">Top 30%</text>
+  <text x="426" y="250" class="t-s">300 ảnh nghi nhất</text>
+
+  <rect class="bx-w" x="590" y="200" width="160" height="76" rx="10"/>
+  <text x="606" y="228" class="t-b">② VLM: phép D</text>
+  <text x="606" y="250" class="t-s">nhìn từng box nghi</text>
+  <text x="606" y="266" class="t-s">ngờ, trả lời có/không</text>
+
+  <rect class="bx-a" x="780" y="200" width="100" height="76" rx="10"/>
+  <text x="796" y="228" class="t-b">Hàng đợi</text>
+  <text x="796" y="250" class="t-s">xếp lại</text>
+
+  <path class="ar" d="M170 238 H197"/><path class="ar" d="M380 238 H407"/>
+  <path class="ar" d="M560 238 H587"/><path class="ar" d="M750 238 H777"/>
+
+  <!-- row 3: report -->
+  <text x="20" y="330" class="lbl">CUỐI BATCH</text>
+  <path class="ar" d="M830 276 V305 H310 V337"/>
+  <rect class="bx-ok" x="200" y="340" width="220" height="76" rx="10"/>
+  <text x="216" y="368" class="t-b">Reviewer bấm verdict</text>
+  <text x="216" y="390" class="t-s">Lỗi thật / Bot nhầm</text>
+
+  <rect class="bx-w" x="460" y="340" width="300" height="76" rx="10"/>
+  <text x="476" y="368" class="t-b">③ LLM viết báo cáo batch</text>
+  <text x="476" y="390" class="t-s">"batch này hay sót traffic light &lt; 12px,</text>
+  <text x="476" y="407" class="t-s">nhầm truck/bus 14 lần" → gửi annotator</text>
+  <path class="ar" d="M420 378 H457"/>
+</svg>
+</div>
+
+<h3 style="font-size:1.05rem;margin:24px 0 8px">Ba việc giao cho LLM/VLM</h3>
+<ol>
+  <li><strong>LLM đọc guideline → bảng luật.</strong> Đây là đầu vào bắt buộc của phép C, nên làm ngay ở Vòng 2, không để đến Vòng 4. Mỗi batch chạy một lần, có người duyệt trước khi dùng, nên rủi ro thấp mà lợi ích cao. Dùng lại được backend đọc guideline của V1 Guideline Assistant. Chi tiết ở mục 3.</li>
+  <li><strong>VLM là phép kiểm D, chỉ chạy trên top 30%.</strong> Với mỗi box nghi ngờ, cắt vùng ảnh quanh box rồi hỏi một câu đóng. Câu hỏi có thể lấy từ luật nhìn ảnh (V1, V2…) mà LLM đã trích từ guideline. Câu trả lời trở thành một tín hiệu nữa để chấm điểm, và một lý do cho reviewer, ví dụ "VLM: vùng này là truck, nhãn ghi car".</li>
+  <li><strong>LLM viết báo cáo cuối batch</strong> từ các verdict, để trưởng nhóm biết annotator hay sai kiểu gì. Việc này làm cho đúng bài học tuần 1: lỗi chủ yếu đến từ guideline không rõ.</li>
+</ol>
+
+<div class="fig" style="padding:14px 16px">
+<p style="margin:0 0 6px"><strong>Ví dụ một lần hỏi VLM (phép D)</strong></p>
+<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;margin:0;white-space:pre-wrap">Đầu vào : ảnh cắt quanh box #7 (nhãn: car) + câu hỏi
+Câu hỏi : "Vật trong khung đỏ là gì? Chọn một: car, truck, bus, không có vật.
+           Trả lời JSON {"class": ..., "chac_chan": "cao|thap"}"
+Trả lời : {"class": "truck", "chac_chan": "cao"}
+→ tín hiệu vlm_class_mismatch = 1 · lý do: "VLM thấy truck, nhãn ghi car"</pre>
+</div>
+
+<h3 style="font-size:1.05rem;margin:24px 0 8px">Vì sao không cho VLM xem hết 1.000 ảnh</h3>
+<ul>
+  <li><strong>Chậm:</strong> mỗi ảnh có khoảng 18 box. Hỏi VLM từng box trên cả batch tốn hàng giờ GPU, trong khi phép A + B + C chỉ mất vài phút.</li>
+  <li><strong>Bịa:</strong> VLM có lúc trả lời tự tin mà sai. Vì vậy nó chỉ <em>thêm</em> tín hiệu, còn người vẫn ra quyết định.</li>
+  <li><strong>Không cần:</strong> 70% ảnh điểm thấp nhất gần như không có lỗi. Phần đó đã có kiểm ngẫu nhiên 5% lo.</li>
+</ul>
+
+<div class="note warn"><strong>Ba điều kiện để giữ LLM/VLM trong bản nộp:</strong>
+<ol style="margin:6px 0 0">
+  <li><strong>Phải đo được:</strong> báo recall@20% có và không có VLM trên cùng tập test. Không tăng thì chỉ để làm lý do hiển thị, hoặc bỏ.</li>
+  <li><strong>Chạy local</strong> (ví dụ Qwen2.5-VL), không gửi ảnh ra ngoài, đúng quy định dữ liệu của dự án. Bản 7B cần GPU khoảng 12GB; máy 4GB chỉ chạy được bản 3B nén.</li>
+  <li><strong>Tái lập được:</strong> temperature 0, ép trả lời JSON, lưu cache câu trả lời để lần chạy sau ra đúng kết quả cũ.</li>
+</ol></div>
+
+</main>
+</body>
+</html>

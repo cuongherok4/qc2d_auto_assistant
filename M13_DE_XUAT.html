@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M13 Đề xuất duyệt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: một cột đọc ~880px; danh sách duyệt ở đầu, chi tiết bên dưới theo thứ tự luồng */
+:root{
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#eeede8; --text:#1c1d1f; --muted:#64666b;
+  --border:#d3d2cb; --accent:#2f5d8a; --accent-soft:#e3ecf5;
+  --ok:#2e7d4f; --ok-soft:#e2f2e8; --warn:#9a6a00; --warn-soft:#fbf0d6; --bad:#b03a3a; --bad-soft:#f7e3e3;
+  --img:#2b3140;
+  --sans:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#161715; --surface:#1f201d; --surface-2:#282925; --text:#ecebe6; --muted:#a5a59e;
+    --border:#4a4a44; --accent:#8fb6dd; --accent-soft:#22303d;
+    --ok:#7cc79a; --ok-soft:#1e3127; --warn:#e3b95a; --warn-soft:#352c17; --bad:#e58c8c; --bad-soft:#3a2222;
+    --img:#0e1118; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161715; --surface:#1f201d; --surface-2:#282925; --text:#ecebe6; --muted:#a5a59e;
+  --border:#4a4a44; --accent:#8fb6dd; --accent-soft:#22303d;
+  --ok:#7cc79a; --ok-soft:#1e3127; --warn:#e3b95a; --warn-soft:#352c17; --bad:#e58c8c; --bad-soft:#3a2222;
+  --img:#0e1118; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 var(--sans)}
+main{max-width:920px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:1.9rem;line-height:1.25;margin:0 0 6px;text-wrap:balance}
+h2{font-size:1.3rem;margin:52px 0 10px;padding-top:14px;border-top:1px solid var(--border);text-wrap:balance}
+h3{font-size:1.02rem;margin:22px 0 6px}
+p{margin:8px 0;max-width:72ch}
+.meta{color:var(--muted);font-size:.92rem}
+.lead{color:var(--muted);font-size:1.03rem;max-width:72ch}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 0}
+nav a{font-size:.84rem;color:var(--accent);text-decoration:none;border:1px solid var(--border);background:var(--surface);padding:3px 10px;border-radius:999px}
+nav a:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code{font-family:var(--mono);font-size:.84em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--mono);font-size:.82rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;overflow-x:auto;line-height:1.55;margin:12px 0}
+ol,ul{padding-left:22px} li{margin:4px 0}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0}
+.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.tbl{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:.91rem}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--border)}
+th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.id{font-family:var(--mono);font-weight:700;color:var(--accent);white-space:nowrap}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.t-new{background:var(--accent-soft);color:var(--accent)}
+.t-chg{background:var(--warn-soft);color:var(--warn)}
+.t-open{background:var(--bad-soft);color:var(--bad)}
+.reply{background:var(--surface);border:1px dashed var(--border);border-radius:10px;padding:12px 16px;margin:14px 0}
+.reply pre{margin:6px 0 0;border:0;padding:0;background:none}
+/* SVG */
+.fig{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin:16px 0;overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:640px;height:auto}
+svg text{fill:var(--text);font-family:var(--sans);font-size:14px}
+svg .t-s{font-size:12.5px;fill:var(--muted)}
+svg .t-b{font-weight:600}
+svg .t-n{font-weight:700;fill:var(--accent)}
+svg .bx{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
+svg .bx-a{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+svg .bx-ok{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.5}
+svg .bx-w{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.5}
+svg .bx-bad{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .ar{stroke:var(--muted);stroke-width:1.6;fill:none;marker-end:url(#arr)}
+svg .ar-d{stroke:var(--accent);stroke-width:1.6;fill:none;stroke-dasharray:6 5;marker-end:url(#arrA)}
+svg .mk{fill:var(--muted)} svg .mkA{fill:var(--accent)}
+svg .lbl{font-size:12.5px;fill:var(--muted);font-weight:600}
+svg .lblA{font-size:12.5px;fill:var(--accent);font-weight:600}
+a{color:var(--accent)}
+#plan + p + .tbl td:first-child{white-space:nowrap}
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:14px 0}
+.person{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:0;font-size:.9rem}
+.person p{margin:6px 0 8px}
+.person code{display:inline-block;margin:2px 2px 0 0;font-size:.76rem;max-width:100%}
+.pn{font-weight:700;font-size:1.05rem}
+.pr{color:var(--muted);font-size:.82rem;letter-spacing:.02em}
+.round{margin:18px 0}
+.rh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.rd{font-family:var(--mono);font-size:.85rem;color:var(--accent);font-variant-numeric:tabular-nums}
+.rm{color:var(--muted);font-size:.85rem}
+td.who{font-weight:600;white-space:nowrap}
+.round td:nth-child(3){min-width:180px}
+@media (max-width:640px){
+  .round table,.round tbody,.round tr,.round td{display:block}
+  .round tr:first-child{display:none}
+  .round tr{padding:10px 0;border-bottom:1px solid var(--border)}
+  .round tr:last-child{border-bottom:0}
+  .round td{border:0;padding:3px 14px;min-width:0}
+  .round td:nth-child(3){min-width:0;color:var(--muted)}
+  .round td:nth-child(3)::before{content:"Xong khi: ";font-weight:600;color:var(--text)}
+}
+footer{margin-top:48px;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+
+<h1>M13 Reviewer Prioritization: đề xuất cần duyệt</h1>
+<p class="meta">Hoàng Mạnh Cường · 11/10/2026 · gộp từ <code>M13_QUY_TRINH.html</code> và <code>M13_CONG_NGHE.html</code></p>
+<p class="lead">Mục tiêu: thay vì review đều 100% ảnh, máy xếp hạng ảnh theo nguy cơ nhãn sai và ghi lý do có con số để reviewer biết nhìn vào đâu. Dữ liệu: BDD100K val, 10k ảnh, nhãn detection 2D. Chỉ số: recall lỗi trong top 20% ảnh và thời gian review tiết kiệm được.</p>
+<nav><a href="#duyet">Cần duyệt</a><a href="#qc">1. Một lần QC</a><a href="#check">2. Chấm 1 ảnh</a><a href="#guideline">3. Guideline → luật</a><a href="#tech">4. Công nghệ</a><a href="#score">5. Chấm điểm, học lại</a><a href="#eval">6. Đo</a><a href="#plan">7. Lịch</a><a href="#task">8. Nhiệm vụ</a><a href="#risk">9. Rủi ro</a></nav>
+
+<h2 id="duyet">Cần duyệt</h2>
+<p>Mỗi điểm có một mã. Trả lời trong nhóm theo mã, chỉ cần ghi lý do cho điểm không đồng ý.</p>
+<div class="tbl"><table>
+<tr><th>Mã</th><th>Đề xuất</th><th>So với trước</th><th>Chi tiết</th></tr>
+<tr><td class="id">D1</td><td>Thêm <strong>bước 0: LLM đọc guideline</strong> của từng batch thành bảng luật, người phụ trách duyệt rồi mới dùng để chấm</td><td><span class="tag t-new">Mới</span> trước đây để "hướng phát triển"</td><td><a href="#guideline">mục 3</a></td></tr>
+<tr><td class="id">D2</td><td>Detector độc lập: <strong>RT-DETR pretrained COCO</strong>, không fine-tune</td><td><span class="tag t-chg">Đổi</span> từ YOLOv8n (AGPL-3.0)</td><td><a href="#tech">mục 4</a></td></tr>
+<tr><td class="id">D3</td><td>Công cụ review: <strong>CVAT + Chrome extension + FastAPI</strong>. FiftyOne chỉ dùng nội bộ khi dev và kiểm tay</td><td>Q17 trả lời FiftyOne</td><td><a href="#tech">mục 4</a></td></tr>
+<tr><td class="id">D4</td><td>Tập kiểm tay lỗi thật: <strong>150–200 ảnh × 2 người</strong>, đo Cohen's kappa</td><td><span class="tag t-chg">Đổi</span> Q10 là 500 ảnh (≈ 25 giờ công)</td><td><a href="#eval">mục 6</a></td></tr>
+<tr><td class="id">D5</td><td>LLM đọc guideline làm ở <strong>Vòng 2</strong>; VLM (Qwen2.5-VL local) ở <strong>Vòng 4</strong>, chỉ chạy top 30%, cắt đầu tiên nếu trễ</td><td><span class="tag t-chg">Đổi</span> trước để cả hai ở Vòng 4</td><td><a href="#plan">mục 7</a></td></tr>
+<tr><td class="id">D6</td><td>Lịch <strong>11/10 → 25/10</strong>, 4 vòng xây + pilot + báo cáo, 6 mốc</td><td>Mốc 1 gốc (10/10) đã trễ</td><td><a href="#plan">mục 7</a></td></tr>
+<tr><td class="id">D7</td><td>LLM đọc guideline chạy <strong>local hay qua API</strong>? Đề xuất: dùng cái V1 Guideline Assistant đang dùng</td><td><span class="tag t-open">Chưa chốt</span></td><td><a href="#guideline">mục 3</a></td></tr>
+<tr><td class="id">D8</td><td><strong>Chia việc theo module</strong>: Cường (ML, ghép code), Sơn (dữ liệu, detector), Tú Anh (LLM, API, extension), Long (guideline, kiểm tay, báo cáo)</td><td><span class="tag t-new">Mới</span></td><td><a href="#task">mục 8</a></td></tr>
+</table></div>
+<div class="reply"><strong>Mẫu trả lời</strong>
+<pre>[Tên] · D1 ok · D2 ok · D3 ok · D4 góp ý: ... · D5 ok · D6 ok · D7: API · D8 ok</pre></div>
+
+<h2 id="qc">1. Một lần QC cho một batch</h2>
+<p>Ví dụ batch 1.000 ảnh. Máy chấm hết, người chỉ xem phần đáng xem, phần đuôi vẫn được kiểm ngẫu nhiên.</p>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+<marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mkA"/></marker>
+</defs></svg>
+<div class="fig">
+<svg viewBox="0 0 900 570" role="img" aria-label="Sơ đồ một lần QC cho một batch">
+  <!-- row 1 -->
+  <rect class="bx" x="20" y="30" width="250" height="84" rx="10"/>
+  <text x="38" y="58" class="t-n">①</text><text x="60" y="58" class="t-b">Batch mới gán xong</text>
+  <text x="38" y="80" class="t-s">Export nhãn từ CVAT</text>
+  <text x="38" y="99" class="t-s">ví dụ 1.000 ảnh</text>
+
+  <rect class="bx-a" x="325" y="30" width="250" height="84" rx="10"/>
+  <text x="343" y="58" class="t-n">②</text><text x="365" y="58" class="t-b">Máy chấm điểm từng ảnh</text>
+  <text x="343" y="80" class="t-s">các phép kiểm, xem phần 2</text>
+  <text x="343" y="99" class="t-s">vài phút, không cần người</text>
+
+  <rect class="bx" x="630" y="30" width="250" height="84" rx="10"/>
+  <text x="648" y="58" class="t-n">③</text><text x="670" y="58" class="t-b">Hàng đợi xếp theo điểm</text>
+  <text x="648" y="80" class="t-s">điểm 0–100, ảnh nguy hiểm lên đầu</text>
+  <text x="648" y="99" class="t-s">mỗi ảnh kèm 3 lý do</text>
+
+  <path class="ar" d="M270 72 H322"/>
+  <path class="ar" d="M575 72 H627"/>
+
+  <!-- split -->
+  <path class="ar" d="M755 114 V150 H320 V187"/>
+  <path class="ar" d="M755 150 H700 V187"/>
+  <text x="120" y="143" class="lbl">Top 20% = 200 ảnh + audit</text>
+  <text x="770" y="143" class="lbl">80% còn lại</text>
+
+  <!-- row 2 -->
+  <rect class="bx-ok" x="180" y="190" width="280" height="84" rx="10"/>
+  <text x="198" y="218" class="t-n">④</text><text x="220" y="218" class="t-b">Reviewer xem theo thứ tự</text>
+  <text x="198" y="240" class="t-s">đọc lý do → nhìn đúng box đó</text>
+  <text x="198" y="259" class="t-s">bấm: Lỗi thật / Bot nhầm / Bỏ qua</text>
+
+  <rect class="bx-w" x="560" y="190" width="280" height="84" rx="10"/>
+  <text x="578" y="218" class="t-n">⑥</text><text x="600" y="218" class="t-b">Kiểm ngẫu nhiên 5% phần đuôi</text>
+  <text x="578" y="240" class="t-s">khoảng 40 ảnh, chọn ngẫu nhiên</text>
+  <text x="578" y="259" class="t-s">→ ước lượng còn sót bao nhiêu lỗi</text>
+
+  <!-- row 3 -->
+  <path class="ar" d="M250 274 V312 H145 V347"/>
+  <text x="152" y="305" class="lbl">Lỗi thật</text>
+  <path class="ar" d="M380 274 V312 H400 V347"/>
+  <text x="408" y="305" class="lbl">mọi verdict</text>
+
+  <rect class="bx" x="20" y="350" width="250" height="84" rx="10"/>
+  <text x="38" y="378" class="t-n">⑤</text><text x="60" y="378" class="t-b">Sửa nhãn trong CVAT</text>
+  <text x="38" y="400" class="t-s">bấm vào ảnh là mở đúng frame</text>
+  <text x="38" y="419" class="t-s">sửa xong là sạch</text>
+
+  <rect class="bx-a" x="290" y="350" width="220" height="84" rx="10"/>
+  <text x="308" y="378" class="t-n">⑦</text><text x="330" y="378" class="t-b">Lưu verdict, học lại</text>
+  <text x="308" y="400" class="t-s">cứ 50 verdict mới thì</text>
+  <text x="308" y="419" class="t-s">train lại model chấm điểm</text>
+
+  <!-- feedback loop -->
+  <path class="ar-d" d="M490 350 V117"/>
+  <text x="498" y="176" class="lblA">học lại → model mới</text>
+
+  <!-- decision -->
+  <path class="ar" d="M700 274 V342"/>
+  <polygon class="bx" points="700,345 810,392 700,439 590,392"/>
+  <text x="700" y="388" text-anchor="middle" class="t-b">Lỗi sót</text>
+  <text x="700" y="406" text-anchor="middle" class="t-b">≤ 2%?</text>
+
+  <path class="ar" d="M590 392 H530 V245 H463"/>
+  <text x="537" y="300" class="lbl">Chưa đạt:</text>
+  <text x="537" y="316" class="lbl">xem tiếp</text>
+  <text x="537" y="332" class="lbl">10% kế</text>
+
+  <path class="ar" d="M700 439 V487"/>
+  <text x="710" y="468" class="lbl">Đạt</text>
+  <rect class="bx-ok" x="590" y="490" width="220" height="60" rx="10"/>
+  <text x="608" y="517" class="t-n">⑧</text><text x="630" y="517" class="t-b">Duyệt batch</text>
+  <text x="608" y="537" class="t-s">kèm số lỗi sót ước lượng</text>
+</svg>
+</div>
+<div class="note">Vài ảnh audit ngẫu nhiên từ nửa dưới hàng đợi được trộn vào ④, để model không chỉ học từ những ảnh nó đã tin là xấu.</div>
+
+<h2 id="check">2. Bên trong bước ②: chấm điểm một ảnh</h2>
+<p>Mỗi phép kiểm trả về mức nghi ngờ 0–1 và một câu lý do có con số. Các mức được gộp thành điểm 0–100, reviewer thấy 3 lý do mạnh nhất.</p>
+<div class="tbl"><table>
+<tr><th>Phép</th><th>Kiểm gì</th><th>Bắt được</th><th>Ví dụ lý do</th></tr>
+<tr><td class="id">A</td><td>Hình học: z-score kích thước/tỉ lệ theo class, box trùng, chạm mép mà không đánh truncated, ngữ cảnh khó</td><td>Co/giãn box, box giả, một phần đổi class</td><td>car #7 cao 7px, nhỏ hơn 98% car</td></tr>
+<tr><td class="id">B</td><td>Detector độc lập chạy trên ảnh, ghép với nhãn bằng Hungarian trên IoU</td><td><strong>Nhãn bị sót</strong> (phép duy nhất bắt được), đổi class, box lệch</td><td>Máy thấy pedestrian (0.91), không có nhãn</td></tr>
+<tr><td class="id">C</td><td>Luật lấy từ guideline của batch (mục 3), chạy 100% ảnh</td><td>Box dưới ngưỡng, class không được phép, thiếu thuộc tính</td><td>[R1] traffic light cao 8px, ngưỡng 10px (tr.3)</td></tr>
+<tr><td class="id">D</td><td>VLM nhìn lại vùng box nghi vấn, chỉ top 30% ảnh (Vòng 4)</td><td>Lỗi cần nhìn bằng mắt</td><td>VLM thấy truck, nhãn ghi car</td></tr>
+</table></div>
+<p>Gộp object thành điểm ảnh bằng trung bình top-k điểm xấu nhất, không lấy trung bình: một box sai nặng giữa 40 box đúng vẫn phải lên đầu hàng đợi.</p>
+
+<h2 id="guideline">3. Guideline đi vào hệ thống thế nào <span class="tag t-new">D1</span></h2>
+<p>Cùng một box 18px có thể đúng với guideline batch A nhưng là box thừa với batch B. Vì vậy luật không viết sẵn trong code: <strong>LLM đọc guideline một lần, người duyệt, rồi máy dùng luật đã duyệt để so với nhãn</strong>. Đổi guideline thì chỉ đổi file luật.</p>
+<div class="fig">
+<svg viewBox="0 0 900 520" role="img" aria-label="Guideline được LLM đọc, người duyệt, rồi chia thành luật đo được và luật nhìn ảnh">
+  <text x="20" y="24" class="t-s">Ô vàng = LLM/VLM · ô xanh = chạy bằng code</text>
+
+  <!-- row 1 -->
+  <text x="20" y="46" class="lbl">ĐẦU BATCH · 1 LẦN</text>
+  <rect class="bx" x="20" y="56" width="200" height="84" rx="10"/>
+  <text x="36" y="84" class="t-b">Guideline batch</text>
+  <text x="36" y="106" class="t-s">file DOCX / PDF</text>
+  <text x="36" y="124" class="t-s">tách văn bản theo trang</text>
+
+  <rect class="bx-w" x="260" y="56" width="300" height="84" rx="10"/>
+  <text x="276" y="84" class="t-n">①</text><text x="296" y="84" class="t-b">LLM đọc guideline</text>
+  <text x="276" y="106" class="t-s">trả JSON theo schema cố định</text>
+  <text x="276" y="124" class="t-s">mỗi luật kèm câu trích gốc + số trang</text>
+
+  <rect class="bx" x="600" y="56" width="280" height="84" rx="10"/>
+  <text x="616" y="84" class="t-n">②</text><text x="636" y="84" class="t-b">Người phụ trách duyệt</text>
+  <text x="616" y="106" class="t-s">so từng luật với câu trích gốc,</text>
+  <text x="616" y="124" class="t-s">sửa chỗ sai rồi ký approved_by</text>
+
+  <path class="ar" d="M220 98 H257"/><path class="ar" d="M560 98 H597"/>
+  <path class="ar" d="M740 140 V162 H155 V187"/>
+  <path class="ar" d="M450 162 V187"/>
+  <path class="ar" d="M745 162 V187"/>
+
+  <!-- row 2: three kinds -->
+  <rect class="bx-ok" x="20" y="190" width="270" height="100" rx="10"/>
+  <text x="36" y="216" class="t-b">Luật đo được · R1, R2…</text>
+  <text x="36" y="238" class="t-s">ngưỡng chiều cao px, class được phép,</text>
+  <text x="36" y="256" class="t-s">class gộp, thuộc tính bắt buộc</text>
+  <text x="36" y="276" class="lblA">→ configs/guidelines/&lt;id&gt;.yaml</text>
+
+  <rect class="bx-w" x="315" y="190" width="270" height="100" rx="10"/>
+  <text x="331" y="216" class="t-b">Luật phải nhìn ảnh · V1, V2…</text>
+  <text x="331" y="238" class="t-s">"không gán đèn đường, đèn xe là</text>
+  <text x="331" y="256" class="t-s">traffic light"</text>
+  <text x="331" y="276" class="lblA">→ câu hỏi cho VLM</text>
+
+  <rect class="bx-bad" x="610" y="190" width="270" height="100" rx="10"/>
+  <text x="626" y="216" class="t-b">Guideline không ghi rõ</text>
+  <text x="626" y="238" class="t-s">LLM để trống, không tự đoán</text>
+  <text x="626" y="256" class="t-s">vd: không có ngưỡng cho traffic sign</text>
+  <text x="626" y="276" class="lblA">→ cờ cảnh báo</text>
+
+  <path class="ar" d="M155 290 V327"/><path class="ar" d="M450 290 V327"/><path class="ar" d="M745 290 V327"/>
+
+  <!-- row 3: use -->
+  <text x="20" y="318" class="lbl">MỖI ẢNH</text>
+  <rect class="bx-a" x="20" y="330" width="270" height="84" rx="10"/>
+  <text x="36" y="358" class="t-n">③</text><text x="56" y="358" class="t-b">Rule engine = phép C</text>
+  <text x="36" y="380" class="t-s">chạy 100% ảnh, vài giây,</text>
+  <text x="36" y="398" class="t-s">chạy lại luôn ra cùng kết quả</text>
+
+  <rect class="bx-w" x="315" y="330" width="270" height="84" rx="10"/>
+  <text x="331" y="358" class="t-n">④</text><text x="351" y="358" class="t-b">VLM = phép D</text>
+  <text x="331" y="380" class="t-s">chỉ top 30% ảnh; hỏi theo luật V,</text>
+  <text x="331" y="398" class="t-s">kèm câu trích + vùng box nghi vấn</text>
+
+  <rect class="bx" x="610" y="330" width="270" height="84" rx="10"/>
+  <text x="626" y="358" class="t-b">Sửa guideline trước khi gán</text>
+  <text x="626" y="380" class="t-s">báo trưởng nhóm ngay đầu batch,</text>
+  <text x="626" y="398" class="t-s">đúng bài học P-001 tuần 1</text>
+
+  <path class="ar" d="M155 414 V447"/><path class="ar" d="M450 414 V447"/>
+
+  <!-- row 4: reason -->
+  <rect class="bx-ok" x="20" y="450" width="860" height="62" rx="10"/>
+  <text x="36" y="474" class="t-b">Lý do reviewer thấy, luôn dẫn về rule ID và trang guideline:</text>
+  <text x="36" y="496" class="t-s">[R1] traffic light cao 8px, ngưỡng 10px (tr.3) · [V1] VLM: vùng này là đèn đường (tr.5)</text>
+</svg>
+</div>
+<h3>Ví dụ LLM đọc một đoạn guideline</h3>
+<pre>Đoạn gốc (tr.3): "Không cần gán xe ở xa có chiều cao dưới 15 pixel. Đèn giao thông
+                  chỉ gán khi cao từ 10 pixel và nhìn rõ đèn, không gán đèn đường."
+LLM trả:
+  - {id: R1, check: below_min_height, category: car,           thr: 15, page: 3, quote: "..."}
+  - {id: R1, check: below_min_height, category: traffic light, thr: 10, page: 3, quote: "..."}
+  - {id: V1, kind: visual, category: traffic light, page: 3,
+     question: "Vật trong khung là đèn giao thông hay đèn đường / đèn xe?"}
+  - {category: traffic sign, thr: null, flag: "guideline không ghi ngưỡng"}</pre>
+<ul>
+  <li><strong>LLM chỉ đọc guideline, không so từng ảnh:</strong> đọc guideline mất một lần mỗi batch. So từng ảnh bằng LLM vừa tốn vừa không ra cùng kết quả giữa hai lần chạy, nên không đo recall được.</li>
+  <li><strong>Kiểm được:</strong> mỗi luật trỏ về câu trích gốc và số trang. Spec chưa có <code>approved_by</code> thì rule engine từ chối chạy.</li>
+  <li><strong>Spec dùng thêm ở:</strong> lọc dự đoán detector trước khi so (tránh báo "thiếu box" cho object guideline cho phép bỏ qua), gộp class cho cả nhãn và dự đoán, tiêm lỗi theo từng guideline, ghi <code>bdd_v1@1.0.0</code> vào hàng đợi và bảng kết quả.</li>
+  <li><strong>Tái lập:</strong> temperature 0, ép JSON theo schema <code>pydantic</code>, cache theo hash file guideline.</li>
+</ul>
+<pre>src/guideline/extract.py            đọc DOCX/PDF, gọi LLM (dùng lại backend V1) → configs/guidelines/drafts/
+configs/guidelines/&lt;id&gt;.yaml         spec đã duyệt: classes, merge, min_height_px, rules, visual_rules, unclear
+configs/batches.yaml                gắn batch → guideline, vd batch_01: bdd_v1@1.0.0
+src/features/guideline_rules.py     rule engine (phép C) + lọc dự đoán theo spec
+src/features/vlm_check.py           VLM kiểm luật V trên top 30% (phép D)</pre>
+
+<h2 id="tech">4. Công nghệ <span class="tag t-chg">D2</span> <span class="tag t-chg">D3</span></h2>
+<p>Nguyên tắc chọn: đơn giản, tái lập được, license sạch (Q1: đây là tool nội bộ dùng thật), giải thích được.</p>
+<div class="tbl"><table>
+<tr><th>Hạng mục</th><th>Chọn</th><th>Lý do</th></tr>
+<tr><td>Môi trường</td><td>Python 3.11 (<code>uv</code>), <code>ruff</code>, <code>pytest</code></td><td>Máy dev có Python 3.14 hệ thống, không cài vào đó</td></tr>
+<tr><td>Dữ liệu</td><td>pandas + Parquet</td><td>10k ảnh, khoảng 185k object, vừa RAM</td></tr>
+<tr><td>Detector</td><td>RT-DETR R50 COCO qua <code>transformers</code></td><td>Apache-2.0. Model fine-tune trên nhãn BDD có lỗi sẽ học luôn lỗi, nên cần ý kiến độc lập. COCO không có rider và traffic sign, nên bỏ hai class này khỏi phép B</td></tr>
+<tr><td>So khớp</td><td>Hungarian (<code>scipy</code>), ghép không phân biệt class rồi mới so class</td><td>Ghép theo class sẽ đếm một lỗi đổi class thành hai lỗi</td></tr>
+<tr><td>Đọc guideline</td><td><code>python-docx</code>, <code>pdfplumber</code> + LLM, schema <code>pydantic</code></td><td>Mục 3</td></tr>
+<tr><td>Chấm điểm</td><td>Rule → rule + detector → LightGBM</td><td>Có bậc baseline rõ ràng để so</td></tr>
+<tr><td>Giao diện review</td><td>FastAPI (127.0.0.1) + SQLite + Chrome extension MV3 mở đúng frame CVAT</td><td>Nhóm đang làm trên CVAT; dùng lại khung V1 Guideline Assistant</td></tr>
+<tr><td>Không dùng</td><td><code>ultralytics</code>, <code>cleanlab</code></td><td>AGPL-3.0. Ý tưởng ObjectLab tự viết lại khoảng 80 dòng</td></tr>
+</table></div>
+<div class="note warn"><strong>GPU:</strong> driver trên máy dev đang lỗi, chặn phép B và VLM. Sửa trước tiên; dự phòng chạy Faster R-CNN trên CPU qua đêm, vì kết quả detector được cache ra Parquet.</div>
+
+<h2 id="score">5. Chấm điểm và học lại</h2>
+<ul>
+  <li><strong>Bậc 1 · Rule:</strong> tổng có trọng số các tín hiệu (<code>configs/weights.yaml</code>), chuẩn hoá 0–100.</li>
+  <li><strong>Bậc 2 · Rule + detector:</strong> dự kiến tăng recall nhiều nhất, vì là bậc duy nhất bắt được lỗi xoá nhãn.</li>
+  <li><strong>Bậc 3 · LightGBM:</strong> đoán ảnh có lỗi hay không, model nông vì chỉ có 6k ảnh train. Lý do cho reviewer vẫn lấy từ bằng chứng cấp object, không đưa số SHAP.</li>
+  <li><strong>Học lại theo đợt:</strong> đủ 50 verdict mới thì train lại GBM. Model mới chỉ được thay nếu recall@20% trên val không giảm quá 0.005. Có <code>model_version</code> để rollback.</li>
+  <li><strong>Chống tự củng cố:</strong> cứ 10 ảnh trong hàng đợi chèn 1 ảnh audit ngẫu nhiên từ nửa dưới.</li>
+</ul>
+
+<h2 id="eval">6. Làm sao biết hệ thống tốt <span class="tag t-chg">D4</span></h2>
+<p>Nhãn thật không cho biết ảnh nào sai, nên nhóm cố tình làm hỏng nhãn (15% ảnh, 1–3 lỗi/ảnh, 5 loại) rồi xem hệ thống tìm lại được bao nhiêu. Chia 6k/2k/2k theo ảnh, seed 42.</p>
+<div class="tbl"><table>
+<tr><th>Chỉ số</th><th>Cách tính</th></tr>
+<tr><td>Recall@20%</td><td>Theo ảnh và theo lỗi có trọng số (xoá nhãn 1.0, đổi class 1.0, box giả 0.6, dịch 0.3, co/giãn 0.3). So với thứ tự ngẫu nhiên và thứ tự file</td></tr>
+<tr><td>Top 20% theo thời gian</td><td>Cắt hàng đợi theo tổng thời gian review ước tính, vì ảnh rủi ro cao thường đông object</td></tr>
+<tr><td>Time saved</td><td><code>1 − n_hàng_đợi(80% recall) / n_ngẫu_nhiên(80% recall)</code>, báo dạng "với X giờ, lỗi sót giảm từ A% xuống B%"</td></tr>
+<tr><td>Lỗi sót dưới vạch cắt</td><td>Kiểm ngẫu nhiên 5% phần đuôi, mục tiêu ≤ 2% object (Q20)</td></tr>
+<tr><td>Độ tin cậy</td><td>Bootstrap 1000 lần theo ảnh, báo CI 95%</td></tr>
+</table></div>
+<div class="note warn"><strong>Lỗi tự tiêm chỉ là bài thi thử.</strong> Con số cuối lấy từ tập kiểm tay lỗi thật: 150–200 ảnh (một nửa đầu hàng đợi, một nửa ngẫu nhiên), 2 người cùng kiểm, đo Cohen's kappa. Nếu tiêm lỗi ưu tiên box nhỏ và ảnh đêm thì tín hiệu "đêm"/"box nhỏ" được lợi một phần nhờ chính cách tiêm, nên phải kiểm chứng lại trên tập này.</div>
+
+<h2 id="plan">7. Lịch và mốc <span class="tag t-chg">D5</span> <span class="tag t-chg">D6</span></h2>
+<p>Mỗi vòng phải chạy được từ đầu đến cuối và có một dòng số trong bảng so sánh rồi mới sang vòng sau.</p>
+<div class="tbl"><table>
+<tr><th>Ngày</th><th>Vòng</th><th>Việc</th><th>Mốc</th></tr>
+<tr><td>11–13/10</td><td>1 · Rule</td><td>Nạp dữ liệu, tiêm lỗi, phép A, chấm điểm rule, gain curve so với ngẫu nhiên</td><td>1</td></tr>
+<tr><td>14–15/10</td><td>2 · Detector + guideline</td><td>Chạy detector, phép B, <strong>LLM đọc guideline → phép C</strong>, bắt đầu kiểm tay</td><td>2</td></tr>
+<tr><td>16–18/10</td><td>3 · Học máy</td><td>GBM, mô phỏng reviewer 10 vòng, bảng so sánh 5 cách, xong kiểm tay</td><td>3</td></tr>
+<tr><td>19–21/10</td><td>4 · VLM</td><td>VLM xem lại top 30%, đo có/không VLM, LLM viết báo cáo batch. Cắt đầu tiên nếu trễ</td><td>4</td></tr>
+<tr><td>22–23/10</td><td>Sản phẩm</td><td>API, extension mở CVAT, pilot đo giây/ảnh</td><td>5</td></tr>
+<tr><td>24–25/10</td><td>Nộp</td><td>Báo cáo, README, video demo</td><td>6</td></tr>
+</table></div>
+<div class="note"><strong>Làm ngay:</strong> tải BDD100K (ảnh val + Detection 2020 Labels), sửa driver GPU, tạo repo git private, có ít nhất 1 file guideline mẫu (DOCX/PDF) cho Vòng 2.</div>
+
+<h2 id="task">8. Khung nhiệm vụ <span class="tag t-open">D8</span></h2>
+<p>Chia theo module: mỗi người chỉ sửa thư mục của mình, nên ghép code ít đụng nhau. Cường ghép và review mọi PR. Đây là đề xuất, mọi người góp ý ở D8 nếu muốn đổi việc.</p>
+
+<div class="people">
+  <div class="person"><div class="pn">Cường</div><div class="pr">ML lead · ghép code</div>
+    <p>Dữ liệu và tiêm lỗi, phép A, chấm điểm, GBM, học lại, đánh giá, CLI.</p>
+    <code>src/<wbr>data/<wbr></code> <code>src/<wbr>scoring/<wbr></code> <code>src/<wbr>eval/<wbr></code> <code>src/<wbr>features/<wbr>geometry.py</code> <code>src/<wbr>cli.py</code> <code>configs/<wbr>*.yaml</code></div>
+  <div class="person"><div class="pn">Sơn</div><div class="pr">BE · dữ liệu và detector</div>
+    <p>Tải dữ liệu, chạy RT-DETR, phép B, hàm vẽ box, VLM ở Vòng 4, kiểm tay.</p>
+    <code>src/<wbr>features/<wbr>model_<wbr>disagreement.py</code> <code>src/<wbr>features/<wbr>vlm_<wbr>check.py</code> <code>src/<wbr>viz.py</code></div>
+  <div class="person"><div class="pn">Tú Anh</div><div class="pr">BE · LLM, API, extension</div>
+    <p>LLM đọc guideline (dùng lại backend V1), API, review DB, Chrome extension.</p>
+    <code>src/<wbr>guideline/<wbr></code> <code>src/<wbr>api/<wbr></code> <code>extension/<wbr></code></div>
+  <div class="person"><div class="pn">Long</div><div class="pr">BA · guideline và kiểm tay</div>
+    <p>Viết guideline mẫu, duyệt spec, rule engine phép C, kiểm tay, pilot, báo cáo.</p>
+    <code>guidelines/<wbr></code> <code>configs/<wbr>guidelines/<wbr></code> <code>src/<wbr>features/<wbr>guideline_<wbr>rules.py</code> <code>reports/<wbr></code></div>
+</div>
+
+<h3>Việc theo từng vòng</h3>
+<p>Cột "Xong khi" là điều kiện để báo Done trong báo cáo tối. Chưa đạt thì ghi Doing kèm phần trăm.</p>
+
+<div class="round"><div class="rh"><span class="rd">11–13/10</span><strong>Vòng 1 · Rule</strong><span class="rm">→ Mốc 1</span></div>
+<div class="tbl"><table>
+<tr><th>Người</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td class="who">Cường</td><td>Sửa driver GPU. Tạo repo git private, mời cả nhóm. Tạo file mẫu cho 2 quy ước (<code>check_contracts.py --make-samples</code>) để Sơn và Tú Anh code trước khi có dữ liệu thật. Viết loader BDD100K, tiêm lỗi, phép A, chấm điểm rule, khung đo và gain curve</td><td>Có 1 dòng recall@20% của rule so với ngẫu nhiên trong <code>reports/results.jsonl</code>; <code>pytest</code> pass</td></tr>
+<tr><td class="who">Sơn</td><td><strong>Việc đầu tiên của cả nhóm:</strong> tải BDD100K (ảnh val + Detection 2020 Labels), đưa lên Drive. Tạo môi trường <code>uv venv --python 3.11</code>. Viết hàm vẽ box dùng chung. Chạy thử RT-DETR trên 100 ảnh (CPU nếu GPU còn lỗi)</td><td>Link Drive trong nhóm; 100 ảnh có dự đoán đúng schema <code>yolo_preds.parquet</code>; ảnh mẫu đã vẽ box</td></tr>
+<tr><td class="who">Tú Anh</td><td>Khung FastAPI: <code>/queue</code> đọc file hàng đợi mẫu, <code>/image/{id}</code>, <code>/verdict</code> lưu SQLite. Tìm hiểu backend V1 Guideline Assistant: đọc DOCX/PDF thế nào, dùng model nào, chạy local hay API</td><td><code>/queue</code> trả đúng file mẫu; ghi chú 1 trang về V1, đủ để chốt D7</td></tr>
+<tr><td class="who">Long</td><td>Viết 3 guideline mẫu dạng DOCX: (1) gốc BDD, (2) ngưỡng 30px + gộp truck/bus, (3) bỏ traffic sign. Mỗi bản có ngưỡng px, danh sách class, quy tắc che khuất, 1–2 luật phải nhìn ảnh, và <strong>cố ý bỏ trống 1 chỗ</strong> để thử cờ "không ghi rõ". Viết tay spec YAML tương ứng làm đáp án</td><td>3 DOCX trong <code>guidelines/</code> và 3 YAML đáp án; Cường đã xem</td></tr>
+</table></div></div>
+
+<div class="round"><div class="rh"><span class="rd">14–15/10</span><strong>Vòng 2 · Detector + guideline</strong><span class="rm">→ Mốc 2</span></div>
+<div class="tbl"><table>
+<tr><th>Người</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td class="who">Cường</td><td>Gộp phép B và C vào chấm điểm (rule + detector), chỉnh trọng số trên val, cập nhật bảng so sánh</td><td>Có dòng "rule + detector" và "rule + detector + guideline" trong <code>results.jsonl</code></td></tr>
+<tr><td class="who">Sơn</td><td>Chạy RT-DETR trên 10k ảnh. Viết phép B: lọc dự đoán theo spec (dùng hàm của Long), ghép Hungarian, ngưỡng tin cậy theo từng class, bỏ rider và traffic sign</td><td><code>data/yolo_preds.parquet</code> qua <code>check_contracts.py</code>; phép B trả <code>SignalResult</code> có lý do kèm con số</td></tr>
+<tr><td class="who">Tú Anh</td><td>Viết <code>src/guideline/extract.py</code>: DOCX/PDF → LLM → spec nháp, kiểm schema <code>pydantic</code>, mỗi luật có trang và câu trích, cache theo hash. Thêm lệnh <code>python -m src.cli guideline extract</code></td><td>Trích được 3 guideline của Long ra <code>configs/guidelines/drafts/</code></td></tr>
+<tr><td class="who">Long</td><td>Duyệt 3 spec nháp, so với đáp án, ghi tỉ lệ luật LLM trích đúng. Viết <code>guideline_rules.py</code> (R1–R4, lọc dự đoán theo spec, ca sát ngưỡng). Bắt đầu kiểm tay 100 ảnh ngẫu nhiên cùng Sơn</td><td>3 spec có <code>approved_by</code>; test "box 18px" pass; xong 50/100 ảnh kiểm tay</td></tr>
+</table></div></div>
+
+<div class="round"><div class="rh"><span class="rd">16–18/10</span><strong>Vòng 3 · Học máy</strong><span class="rm">→ Mốc 3</span></div>
+<div class="tbl"><table>
+<tr><th>Người</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td class="who">Cường</td><td>LightGBM, mô phỏng reviewer 10 vòng, bảng so sánh 5 cách (ngẫu nhiên, thứ tự file, rule, rule + detector, GBM)</td><td>Bảng 5 cách có CI 95%; đường cong học</td></tr>
+<tr><td class="who">Sơn</td><td>Kiểm tay 100 ảnh đầu hàng đợi cùng Long. Tính Cohen's kappa</td><td>Đủ 150–200 ảnh có 2 người kiểm; có kappa</td></tr>
+<tr><td class="who">Tú Anh</td><td>Chrome extension MV3: side panel hiện hàng đợi, lý do, box nghi vấn, nút Lỗi thật / Bot nhầm / Bỏ qua, mở đúng frame trong CVAT</td><td>Demo được một lượt review từ đầu đến cuối trên dữ liệu thật</td></tr>
+<tr><td class="who">Long</td><td>Thí nghiệm 3 guideline: so recall@20% của bản biết guideline với bản không biết. Kiểm tay cùng Sơn</td><td>Bảng kết quả 3 guideline</td></tr>
+</table></div></div>
+
+<div class="round"><div class="rh"><span class="rd">19–21/10</span><strong>Vòng 4 · VLM</strong><span class="rm">→ Mốc 4 · cắt đầu tiên nếu trễ</span></div>
+<div class="tbl"><table>
+<tr><th>Người</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td class="who">Cường</td><td>Đo có/không VLM trên cùng tập test. LLM viết báo cáo cuối batch từ verdict (nếu kịp)</td><td>Quyết định giữ hay bỏ VLM, có số liệu</td></tr>
+<tr><td class="who">Sơn</td><td><code>vlm_check.py</code>: Qwen2.5-VL local hỏi luật V và box nghi vấn trên top 30%, temperature 0, cache. Chỉ làm khi GPU đã sửa</td><td>Tín hiệu VLM chạy được trên tập test</td></tr>
+<tr><td class="who">Tú Anh</td><td>Hoàn thiện extension; thêm <code>/retrain</code>, <code>/model</code>; cài đặt trên máy cả nhóm</td><td>Cả 4 máy mở được hàng đợi</td></tr>
+<tr><td class="who">Long</td><td>Soạn kịch bản pilot (ai review, bao nhiêu ảnh, đo gì), dựng khung báo cáo</td><td>Kịch bản pilot được nhóm duyệt</td></tr>
+</table></div></div>
+
+<div class="round"><div class="rh"><span class="rd">22–25/10</span><strong>Pilot và nộp</strong><span class="rm">→ Mốc 5, 6</span></div>
+<div class="tbl"><table>
+<tr><th>Người</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td class="who">Cả nhóm</td><td>Pilot: review cùng một batch theo hàng đợi và theo thứ tự thường, đo giây/ảnh</td><td>Có số time saved đo thật</td></tr>
+<tr><td class="who">Cường</td><td>README, bảng kết quả cuối, kiểm lại mọi con số trong báo cáo</td><td>Mọi số trong báo cáo truy được về <code>results.jsonl</code></td></tr>
+<tr><td class="who">Long</td><td>Viết báo cáo</td><td>Báo cáo nộp</td></tr>
+<tr><td class="who">Sơn, Tú Anh</td><td>Quay video demo: một batch từ lúc đọc guideline đến lúc duyệt</td><td>Video ≤ 3 phút</td></tr>
+</table></div></div>
+
+<h3>Thứ tự để không ai phải chờ</h3>
+<ol>
+  <li><strong>Sơn tải dữ liệu trước tiên</strong> (11/10). Mọi phần chạy thật đều cần bước này.</li>
+  <li><strong>Cường tạo file mẫu</strong> cho <code>yolo_preds.parquet</code> và <code>ranked_queue</code> ngay ngày đầu, để Sơn và Tú Anh code trước khi có dữ liệu thật.</li>
+  <li><strong>Long xong 3 guideline DOCX trước 13/10</strong>, vì Tú Anh cần chúng để thử bước LLM ở Vòng 2.</li>
+  <li>RT-DETR chạy nền 10k ảnh trong lúc Sơn viết phần ghép.</li>
+  <li>Kiểm tay 100 ảnh ngẫu nhiên làm trước (không cần hàng đợi), 100 ảnh đầu hàng đợi làm sau.</li>
+</ol>
+
+<h3>Ba quy ước để ghép code</h3>
+<p>Không đổi khi chưa báo cả nhóm. Kiểm bằng <code>python .claude/skills/qc2d-project/scripts/check_contracts.py</code>.</p>
+<div class="tbl"><table>
+<tr><th>Quy ước</th><th>Nội dung</th></tr>
+<tr><td>Tín hiệu</td><td><code>SignalResult(name, value, reason)</code>: <code>value</code> trong [0, 1], <code>reason</code> tiếng Việt <strong>có con số</strong>, ví dụ "Box car cao 9px, nhỏ hơn 99% car khác". Luật guideline bắt đầu bằng rule ID: "[R1] ..."</td></tr>
+<tr><td><code>data/yolo_preds.parquet</code></td><td>Cột <code>image_id, x1, y1, x2, y2, category, conf</code>; <code>category</code> là tên class BDD; toạ độ pixel ảnh gốc 1280×720. Giữ tên file kể cả khi dùng RT-DETR</td></tr>
+<tr><td><code>reports/ranked_queue_*.csv</code></td><td>Cột <code>image_id, risk_score, rank, top_reasons, model_version</code>; điểm 0–100, <code>rank</code> từ 1, tối đa 3 lý do nối bằng <code> | </code></td></tr>
+</table></div>
+
+<h3>Git và báo cáo</h3>
+<ul>
+  <li>Mỗi người một nhánh <code>feat/&lt;việc&gt;</code>, <code>git pull --rebase</code> mỗi sáng, PR nhỏ, merge trong ngày.</li>
+  <li>Trước khi mở PR: <code>pytest -q &amp;&amp; ruff check .</code>. Cường review và merge.</li>
+  <li><strong>Không đưa dữ liệu, ảnh, model, file guideline thật vào git</strong> (<code>data/</code>, <code>*.parquet</code>, <code>*.pt</code>). Chia qua Drive.</li>
+  <li>Tham số để trong <code>configs/*.yaml</code>, không viết cứng trong code. Seed 42.</li>
+</ul>
+<div class="reply"><strong>Báo cáo 22:30 mỗi tối</strong>
+<pre>Báo cáo [tên] · [ngày]
+Done:      việc đã xong (link PR)
+Doing:     đang làm, xong khoảng bao nhiêu %
+Blocked:   đang chờ ai / chờ gì
+Link:      PR, file, ảnh kết quả
+Questions: câu hỏi cho nhóm</pre></div>
+
+<h2 id="risk">9. Rủi ro và cách xử lý</h2>
+<div class="tbl"><table>
+<tr><th>Rủi ro</th><th>Ảnh hưởng</th><th>Cách xử lý</th></tr>
+<tr><td>Driver GPU vẫn lỗi</td><td>Chậm phép B, mất VLM</td><td>Cường sửa trong 11/10; dự phòng Faster R-CNN CPU chạy qua đêm hoặc Colab; VLM là phần cắt đầu tiên</td></tr>
+<tr><td>Chưa tải được dữ liệu</td><td>Mọi việc chạy thật bị chặn</td><td>Code trên file mẫu; Sơn báo ngay trong nhóm nếu link tải lỗi</td></tr>
+<tr><td>LLM trích luật sai</td><td>Phép C chấm sai</td><td>Người duyệt so với câu trích; spec chưa duyệt thì không chạy; có YAML đáp án để đo tỉ lệ đúng</td></tr>
+<tr><td>Số tốt nhờ cách tiêm lỗi</td><td>Báo cáo thổi phồng</td><td>Báo riêng có/không tín hiệu ngữ cảnh; con số cuối lấy từ tập kiểm tay</td></tr>
+<tr><td>Kiểm tay không kịp</td><td>Thiếu thước đo cuối</td><td>Bắt đầu từ Vòng 2, làm 100 ảnh ngẫu nhiên trước</td></tr>
+<tr><td>Trễ lịch</td><td>Không kịp 25/10</td><td>Thứ tự cắt: VLM → LLM báo cáo batch → lambdarank. Không cắt phần đánh giá</td></tr>
+</table></div>
+
+<footer>Ngày kết thúc 25/10 là giả định từ "còn 2 tuần". Các ước tính thời gian chạy chưa được đo. Bối cảnh đầy đủ: <code>M13_TOM_TAT.md</code>.</footer>
+</main>
+</body>
+</html>

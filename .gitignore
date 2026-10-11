@@ -1,0 +1,20 @@
+# Dữ liệu, ảnh, model: chia qua Drive, không đưa vào git
+data/
+models/
+*.parquet
+*.pt
+*.onnx
+*.jpg
+*.png
+*.mp4
+guidelines/*.docx
+guidelines/*.pdf
+
+# Python / môi trường
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Claude Code: chỉ chia sẻ skill, không chia sẻ cài đặt cá nhân
+.claude/settings.local.json
