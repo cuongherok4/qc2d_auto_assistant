@@ -29,3 +29,13 @@ def test_preds_contract():
                       columns=["image_id", "x1", "y1", "x2", "y2", "category", "conf"])
     assert check_preds(ok) == []
     assert check_preds(ok.assign(category="person"))
+
+
+def test_samples_follow_contracts(tmp_path, monkeypatch):
+    from src import cli, config
+
+    monkeypatch.setattr(config, "ROOT", tmp_path)
+    monkeypatch.setattr(config, "path", lambda key: tmp_path / config.load("paths")[key])
+    assert cli.main(["samples"]) == 0
+    assert check_preds(pd.read_parquet(tmp_path / "data/samples/yolo_preds.parquet")) == []
+    assert check_queue(pd.read_csv(tmp_path / "reports/ranked_queue_sample.csv")) == []
