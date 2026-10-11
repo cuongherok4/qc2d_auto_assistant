@@ -1,0 +1,15 @@
+# Chính sách của luồng Tú Anh theo M13_DE_XUAT; không thay learning.yaml của nhóm.
+audit_every: 10
+audit_seed: 42
+retrain_after: 50
+max_recall_drop: 0.005
+rank_buckets: [0.2, 0.5, 1.0]
+allowed_origins: []
+server_host: 127.0.0.1
+server_port: 8000
+fixture_dir: data/samples/review
+queue_file: null
+queue_batches: {} # batch_id: reports/ranked_queue_<version>.csv
+evidence_file: null
+retrain_backend: null # module:function; xem docs/tuanh-demo.md
+
