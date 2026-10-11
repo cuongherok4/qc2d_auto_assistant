@@ -1,0 +1,2 @@
+# Gắn batch với guideline (id@version). null = chạy không theo guideline.
+batch_01: bdd-default@1.0.0

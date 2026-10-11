@@ -1,0 +1,17 @@
+# Trọng số chấm điểm rule: risk = 100 * sum(w * value) / sum(w).
+# Mỗi trọng số ghi lý do. Tín hiệu chưa có (chưa code) tự bị bỏ qua.
+signals:
+  size_outlier: 1.0          # box kích thước bất thường so với cùng class
+  edge_no_trunc: 0.5         # chạm mép mà không gắn truncated: lỗi attribute, nhẹ
+  dup_same_class: 1.0        # box trùng: gần như chắc là lỗi
+  overlap_cross_class: 0.8   # hai class khác chồng nhau: nghi sai class
+  rare_class: 0.3            # chỉ là ngữ cảnh
+  crowded: 0.5               # ảnh đông dễ sót
+  many_tiny: 0.5             # nhiều box nhỏ dễ sót
+  hard_condition: 0.3        # đêm/mưa/sương: chỉ là ngữ cảnh
+  model_missing_label: 1.5   # detector thấy mà nhãn không có: tín hiệu mạnh nhất cho lỗi missing
+  model_class_conflict: 1.2
+  model_loose_box: 0.6
+  label_unsupported: 0.4     # model hay sót vật bị che, nên để thấp
+  guideline: 1.0
+top_reasons: 3

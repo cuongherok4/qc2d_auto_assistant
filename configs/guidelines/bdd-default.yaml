@@ -1,0 +1,27 @@
+# Spec mặc định theo guideline gốc BDD100K. Long phụ trách; người duyệt điền approved_by.
+id: bdd-default
+version: 1.0.0
+approved_by: ""
+source: {file: null, sha256: null}
+classes: [pedestrian, rider, car, truck, bus, train, motorcycle, bicycle, traffic light, traffic sign]
+merge: {}
+min_height_px:
+  default: 0
+near_threshold_px: 3
+iou_loose: 0.7
+required_attributes: [occluded, truncated]
+rules:
+  - id: R1
+    check: below_min_height
+    severity: 0.6
+    message: "Box {category} cao {h:.0f}px, dưới ngưỡng {thr}px của guideline"
+  - id: R2
+    check: class_not_allowed
+    severity: 1.0
+    message: "Class {category} không có trong guideline {gid}"
+  - id: R3
+    check: missing_attribute
+    severity: 0.3
+    message: "Box {category} #{obj_id} thiếu thuộc tính {attr}"
+visual_rules: []
+unclear: []

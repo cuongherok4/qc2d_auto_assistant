@@ -1,0 +1,17 @@
+[
+  {"name": "img-day-1.jpg", "attributes": {"weather": "clear", "timeofday": "daytime", "scene": "city street"},
+   "labels": [
+     {"id": "1", "category": "car", "attributes": {"occluded": false, "truncated": false},
+      "box2d": {"x1": 100.0, "y1": 300.0, "x2": 260.0, "y2": 420.0}},
+     {"id": "2", "category": "person", "attributes": {"occluded": true, "truncated": false},
+      "box2d": {"x1": 50.0, "y1": 310.0, "x2": 90.0, "y2": 420.0}},
+     {"id": "3", "category": "lane/single white", "poly2d": [[[0, 0], [10, 10]]]}
+   ]},
+  {"name": "img-night-2.jpg", "attributes": {"weather": "rainy", "timeofday": "night", "scene": "highway"},
+   "labels": [
+     {"id": "1", "category": "motor", "attributes": {"occluded": false, "truncated": true},
+      "box2d": {"x1": 0.0, "y1": 200.0, "x2": 80.0, "y2": 330.0}}
+   ]},
+  {"name": "img-empty-3.jpg", "attributes": {"weather": "clear", "timeofday": "dawn/dusk", "scene": "residential"},
+   "labels": null}
+]

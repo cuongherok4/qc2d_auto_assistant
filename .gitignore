@@ -1,6 +1,6 @@
 # Dữ liệu, ảnh, model: chia qua Drive, không đưa vào git
-data/
-models/
+/data/
+/models/
 *.parquet
 *.pt
 *.onnx
@@ -18,3 +18,10 @@ __pycache__/
 
 # Claude Code: chỉ chia sẻ skill, không chia sẻ cài đặt cá nhân
 .claude/settings.local.json
+
+# Kết quả sinh ra khi chạy (results.jsonl và báo cáo tuần vẫn commit)
+reports/ranked_queue_*.csv
+reports/viz/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/

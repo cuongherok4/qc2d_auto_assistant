@@ -1,0 +1,16 @@
+# Map tên class BDD bản cũ về 10 class chuẩn, áp dụng ngay khi load.
+classes: [pedestrian, rider, car, truck, bus, train, motorcycle, bicycle, traffic light, traffic sign]
+rename:
+  person: pedestrian
+  motor: motorcycle
+  bike: bicycle
+# COCO -> BDD cho detector pretrained. COCO không có rider, traffic sign: bỏ khỏi tín hiệu bất đồng.
+coco_to_bdd:
+  person: pedestrian
+  bicycle: bicycle
+  car: car
+  motorcycle: motorcycle
+  bus: bus
+  train: train
+  truck: truck
+  traffic light: traffic light

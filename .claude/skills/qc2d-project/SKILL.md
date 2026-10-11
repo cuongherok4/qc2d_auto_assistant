@@ -7,7 +7,7 @@ description: Bản đồ tổng của dự án M13 Reviewer Prioritization (hỗ
 
 Mục tiêu sản phẩm: thay vì QC review đều 100% ảnh, tool xếp hạng ảnh theo **nguy cơ nhãn sai** và kèm **lý do tiếng Việt có con số** để reviewer biết nhìn vào đâu. Chỉ số chính: recall lỗi trong top 20% và thời gian review tiết kiệm được.
 
-Bối cảnh đầy đủ (quyết định, mâu thuẫn chưa chốt) nằm ở `M13_TOM_TAT.md` ở gốc repo. Đọc mục 4, 5 và 9 của file đó khi việc đang làm chạm tới một điểm chưa chốt (detector, công cụ review, LLM/VLM, số ảnh kiểm tay). Đừng tự chốt hộ nhóm: làm theo kế hoạch gốc, để lựa chọn thay thế sau một tham số config, và nói rõ với người dùng.
+Bối cảnh đầy đủ (quyết định, mâu thuẫn chưa chốt) nằm ở `docs/tom-tat.md`. Đọc mục 4, 5 và 9 của file đó khi việc đang làm chạm tới một điểm chưa chốt (detector, công cụ review, LLM/VLM, số ảnh kiểm tay). Đừng tự chốt hộ nhóm: làm theo kế hoạch gốc, để lựa chọn thay thế sau một tham số config, và nói rõ với người dùng.
 
 ## Luồng 7 bước và skill tương ứng
 
@@ -38,7 +38,7 @@ python .claude/skills/qc2d-project/scripts/check_contracts.py --preds data/yolo_
 
 Khi chưa có dữ liệu thật, tạo file mẫu đúng schema để người khác code trước (`--make-samples <thư mục>`).
 
-## Cấu trúc thư mục và người phụ trách (đề xuất mục 7, chưa duyệt)
+## Cấu trúc thư mục và người phụ trách (đã chốt, chi tiết ở `CONTRIBUTING.md`)
 
 ```
 configs/              paths, weights, injection, learning, class_map, guidelines/
@@ -69,7 +69,7 @@ Khi sửa code ngoài thư mục của người đang làm, nhắc họ điều 
 pytest -q && ruff check .
 ```
 
-Nhánh `feat/<việc>`, PR nhỏ, merge trong ngày. Commit message tiếng Anh hoặc tiếng Việt đều được, nhưng mô tả **cái gì đổi và vì sao**.
+Nhánh `<loại>/<tên>-<việc>` (vd. `feat/son-model-missing-label`) tạo từ `develop`, PR vào `develop`, không bao giờ push thẳng vào `develop`/`main`. Chỉ Cường merge vào `develop`, và đưa `develop` vào `main` khi dự án hoàn thành. PR nhỏ, merge trong ngày. Commit message tiếng Anh hoặc tiếng Việt đều được, nhưng mô tả **cái gì đổi và vì sao**.
 
 Nếu người dùng cần báo cáo tiến độ, dùng mẫu 22:30:
 

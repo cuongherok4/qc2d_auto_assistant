@@ -1,0 +1,17 @@
+# GBM và vòng học lại (Mốc 3).
+gbm:
+  num_leaves: 31
+  learning_rate: 0.05
+  n_estimators: 500
+  early_stopping_rounds: 50
+  seed: 42
+retrain:
+  batch_size: 200            # học lại sau mỗi 200 verdict, không học online
+  audit_rate: 0.05           # 5% hàng đợi là ảnh ngẫu nhiên dưới vạch cắt
+  simulated_reviewer_noise: 0.05
+  gate_metric: recall20_weighted   # model mới phải không tệ hơn model cũ mới được thay
+eval:
+  top_frac: 0.2
+  recall_target: 0.8
+  random_seeds: 20
+  review_time: {a: 5.0, b: 1.5}    # giây/ảnh ≈ a + b * n_boxes khi chưa đo thật

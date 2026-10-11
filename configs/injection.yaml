@@ -1,0 +1,20 @@
+# Tiêm lỗi có đáp án (chốt 07/10). Đổi tham số = đổi kết quả đánh giá: báo cả nhóm.
+seed: 42
+rate: 0.15               # tỉ lệ ảnh (có >= 1 box) bị tiêm lỗi
+errors_per_image: [1, 3]
+splits: {train: 0.6, val: 0.2, test: 0.2}   # chia theo ảnh
+types:                   # trọng số dùng khi đánh giá recall có trọng số
+  missing: 1.0
+  wrong_class: 1.0
+  spurious: 0.6
+  shift: 0.3
+  resize: 0.3
+test_only: [spurious, resize]   # kiểm GBM khái quát sang loại lỗi chưa thấy
+confusable_pairs:
+  - [car, truck]
+  - [bus, truck]
+  - [pedestrian, rider]
+  - [bicycle, motorcycle]
+  - [traffic light, traffic sign]
+shift_iou_range: [0.4, 0.7]
+min_box_side_px: 2

@@ -106,7 +106,7 @@ footer{margin-top:48px;color:var(--muted);font-size:.85rem}
 <main>
 
 <h1>M13 Reviewer Prioritization: đề xuất cần duyệt</h1>
-<p class="meta">Hoàng Mạnh Cường · 11/10/2026 · gộp từ <code>M13_QUY_TRINH.html</code> và <code>M13_CONG_NGHE.html</code></p>
+<p class="meta">Hoàng Mạnh Cường · 11/10/2026</p>
 <p class="lead">Mục tiêu: thay vì review đều 100% ảnh, máy xếp hạng ảnh theo nguy cơ nhãn sai và ghi lý do có con số để reviewer biết nhìn vào đâu. Dữ liệu: BDD100K val, 10k ảnh, nhãn detection 2D. Chỉ số: recall lỗi trong top 20% ảnh và thời gian review tiết kiệm được.</p>
 <nav><a href="#duyet">Cần duyệt</a><a href="#qc">1. Một lần QC</a><a href="#check">2. Chấm 1 ảnh</a><a href="#guideline">3. Guideline → luật</a><a href="#tech">4. Công nghệ</a><a href="#score">5. Chấm điểm, học lại</a><a href="#eval">6. Đo</a><a href="#plan">7. Lịch</a><a href="#task">8. Nhiệm vụ</a><a href="#risk">9. Rủi ro</a></nav>
 
@@ -119,7 +119,7 @@ footer{margin-top:48px;color:var(--muted);font-size:.85rem}
 <tr><td class="id">D3</td><td>Công cụ review: <strong>CVAT + Chrome extension + FastAPI</strong>. FiftyOne chỉ dùng nội bộ khi dev và kiểm tay</td><td>Q17 trả lời FiftyOne</td><td><a href="#tech">mục 4</a></td></tr>
 <tr><td class="id">D4</td><td>Tập kiểm tay lỗi thật: <strong>150–200 ảnh × 2 người</strong>, đo Cohen's kappa</td><td><span class="tag t-chg">Đổi</span> Q10 là 500 ảnh (≈ 25 giờ công)</td><td><a href="#eval">mục 6</a></td></tr>
 <tr><td class="id">D5</td><td>LLM đọc guideline làm ở <strong>Vòng 2</strong>; VLM (Qwen2.5-VL local) ở <strong>Vòng 4</strong>, chỉ chạy top 30%, cắt đầu tiên nếu trễ</td><td><span class="tag t-chg">Đổi</span> trước để cả hai ở Vòng 4</td><td><a href="#plan">mục 7</a></td></tr>
-<tr><td class="id">D6</td><td>Lịch <strong>11/10 → 25/10</strong>, 4 vòng xây + pilot + báo cáo, 6 mốc</td><td>Mốc 1 gốc (10/10) đã trễ</td><td><a href="#plan">mục 7</a></td></tr>
+<tr><td class="id">D6</td><td>Lịch <strong>11/10 → 25/10</strong>, 4 vòng xây + pilot + báo cáo, 6 mốc</td><td>Hoàn thành trong 2 tuần</td><td><a href="#plan">mục 7</a></td></tr>
 <tr><td class="id">D7</td><td>LLM đọc guideline chạy <strong>local hay qua API</strong>? Đề xuất: dùng cái V1 Guideline Assistant đang dùng</td><td><span class="tag t-open">Chưa chốt</span></td><td><a href="#guideline">mục 3</a></td></tr>
 <tr><td class="id">D8</td><td><strong>Chia việc theo module</strong>: Cường (ML, ghép code), Sơn (dữ liệu, detector), Tú Anh (LLM, API, extension), Long (guideline, kiểm tay, báo cáo)</td><td><span class="tag t-new">Mới</span></td><td><a href="#task">mục 8</a></td></tr>
 </table></div>
@@ -329,7 +329,6 @@ src/features/vlm_check.py           VLM kiểm luật V trên top 30% (phép D)<
 <tr><td>Giao diện review</td><td>FastAPI (127.0.0.1) + SQLite + Chrome extension MV3 mở đúng frame CVAT</td><td>Nhóm đang làm trên CVAT; dùng lại khung V1 Guideline Assistant</td></tr>
 <tr><td>Không dùng</td><td><code>ultralytics</code>, <code>cleanlab</code></td><td>AGPL-3.0. Ý tưởng ObjectLab tự viết lại khoảng 80 dòng</td></tr>
 </table></div>
-<div class="note warn"><strong>GPU:</strong> driver trên máy dev đang lỗi, chặn phép B và VLM. Sửa trước tiên; dự phòng chạy Faster R-CNN trên CPU qua đêm, vì kết quả detector được cache ra Parquet.</div>
 
 <h2 id="score">5. Chấm điểm và học lại</h2>
 <ul>
@@ -363,7 +362,7 @@ src/features/vlm_check.py           VLM kiểm luật V trên top 30% (phép D)<
 <tr><td>22–23/10</td><td>Sản phẩm</td><td>API, extension mở CVAT, pilot đo giây/ảnh</td><td>5</td></tr>
 <tr><td>24–25/10</td><td>Nộp</td><td>Báo cáo, README, video demo</td><td>6</td></tr>
 </table></div>
-<div class="note"><strong>Làm ngay:</strong> tải BDD100K (ảnh val + Detection 2020 Labels), sửa driver GPU, tạo repo git private, có ít nhất 1 file guideline mẫu (DOCX/PDF) cho Vòng 2.</div>
+<div class="note"><strong>Làm ngay:</strong> tải BDD100K (ảnh val + Detection 2020 Labels), có ít nhất 1 file guideline mẫu (DOCX/PDF) cho Vòng 2.</div>
 
 <h2 id="task">8. Khung nhiệm vụ <span class="tag t-open">D8</span></h2>
 <p>Chia theo module: mỗi người chỉ sửa thư mục của mình, nên ghép code ít đụng nhau. Cường ghép và review mọi PR. Đây là đề xuất, mọi người góp ý ở D8 nếu muốn đổi việc.</p>
@@ -389,7 +388,7 @@ src/features/vlm_check.py           VLM kiểm luật V trên top 30% (phép D)<
 <div class="round"><div class="rh"><span class="rd">11–13/10</span><strong>Vòng 1 · Rule</strong><span class="rm">→ Mốc 1</span></div>
 <div class="tbl"><table>
 <tr><th>Người</th><th>Việc</th><th>Xong khi</th></tr>
-<tr><td class="who">Cường</td><td>Sửa driver GPU. Tạo repo git private, mời cả nhóm. Tạo file mẫu cho 2 quy ước (<code>check_contracts.py --make-samples</code>) để Sơn và Tú Anh code trước khi có dữ liệu thật. Viết loader BDD100K, tiêm lỗi, phép A, chấm điểm rule, khung đo và gain curve</td><td>Có 1 dòng recall@20% của rule so với ngẫu nhiên trong <code>reports/results.jsonl</code>; <code>pytest</code> pass</td></tr>
+<tr><td class="who">Cường</td><td>Tạo file mẫu cho 2 quy ước (<code>check_contracts.py --make-samples</code>) để Sơn và Tú Anh code trước khi có dữ liệu thật. Viết tiêm lỗi, phép A, gain curve (loader, chấm điểm rule và khung đo đã có trong base)</td><td>Có 1 dòng recall@20% của rule so với ngẫu nhiên trong <code>reports/results.jsonl</code>; <code>pytest</code> pass</td></tr>
 <tr><td class="who">Sơn</td><td><strong>Việc đầu tiên của cả nhóm:</strong> tải BDD100K (ảnh val + Detection 2020 Labels), đưa lên Drive. Tạo môi trường <code>uv venv --python 3.11</code>. Viết hàm vẽ box dùng chung. Chạy thử RT-DETR trên 100 ảnh (CPU nếu GPU còn lỗi)</td><td>Link Drive trong nhóm; 100 ảnh có dự đoán đúng schema <code>yolo_preds.parquet</code>; ảnh mẫu đã vẽ box</td></tr>
 <tr><td class="who">Tú Anh</td><td>Khung FastAPI: <code>/queue</code> đọc file hàng đợi mẫu, <code>/image/{id}</code>, <code>/verdict</code> lưu SQLite. Tìm hiểu backend V1 Guideline Assistant: đọc DOCX/PDF thế nào, dùng model nào, chạy local hay API</td><td><code>/queue</code> trả đúng file mẫu; ghi chú 1 trang về V1, đủ để chốt D7</td></tr>
 <tr><td class="who">Long</td><td>Viết 3 guideline mẫu dạng DOCX: (1) gốc BDD, (2) ngưỡng 30px + gộp truck/bus, (3) bỏ traffic sign. Mỗi bản có ngưỡng px, danh sách class, quy tắc che khuất, 1–2 luật phải nhìn ảnh, và <strong>cố ý bỏ trống 1 chỗ</strong> để thử cờ "không ghi rõ". Viết tay spec YAML tương ứng làm đáp án</td><td>3 DOCX trong <code>guidelines/</code> và 3 YAML đáp án; Cường đã xem</td></tr>
@@ -475,7 +474,7 @@ Questions: câu hỏi cho nhóm</pre></div>
 <tr><td>Trễ lịch</td><td>Không kịp 25/10</td><td>Thứ tự cắt: VLM → LLM báo cáo batch → lambdarank. Không cắt phần đánh giá</td></tr>
 </table></div>
 
-<footer>Ngày kết thúc 25/10 là giả định từ "còn 2 tuần". Các ước tính thời gian chạy chưa được đo. Bối cảnh đầy đủ: <code>M13_TOM_TAT.md</code>.</footer>
+<footer>Ngày kết thúc 25/10 là giả định từ "còn 2 tuần". Các ước tính thời gian chạy chưa được đo. Bối cảnh đầy đủ: <code>docs/tom-tat.md</code>.</footer>
 </main>
 </body>
 </html>

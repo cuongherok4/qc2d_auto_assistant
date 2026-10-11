@@ -1,6 +1,6 @@
-# M13 Reviewer Prioritization: tóm tắt để làm tiếp
+# M13 Reviewer Prioritization: tóm tắt dự án
 
-Cập nhật: 11/10/2026. File này gom toàn bộ bối cảnh, hiện trạng, các quyết định đã bàn và việc còn phải chốt, để làm tiếp ở chỗ khác mà không cần đọc lại cuộc trò chuyện.
+Cập nhật: 11/10/2026. Bối cảnh, hiện trạng, các quyết định đã bàn và việc còn phải chốt của dự án.
 
 ---
 
@@ -21,13 +21,11 @@ Cập nhật: 11/10/2026. File này gom toàn bộ bối cảnh, hiện trạng,
 
 ## 2. Hiện trạng ngày 11/10
 
-- Thư mục `m13-reviewer-prioritization/` **chỉ có khung**: `CLAUDE.md`, `README.md`, `docs/PLAN.md`, `docs/DEPLOYMENT.md`, 5 config YAML (paths, weights, injection, learning, class_map), CLI chỉ có tham số, khung FastAPI (`/health`, `/queue` rỗng), `SignalResult` trong `src/features/base.py`, khung extension MV3, 5 skill Claude Code, 1 test smoke.
-- **Chưa có dữ liệu** trong `data/`. **Chưa có git.**
-- **Driver GPU trên máy dev đang lỗi** (`nvidia-smi` không kết nối được driver). Python hệ thống là 3.14, project cần 3.11 (dùng `uv venv --python 3.11`).
-- **Mốc 1 (hạn 10/10) đã trễ.**
-- Báo cáo tuần 4: `Tuan-4/tuan-04.md`, bản cập nhật 08/10.
+- Repo `qc-2d` đã có base để cả nhóm làm song song: 3 quy ước ghép code, loader BDD100K, chấm điểm rule, metric đánh giá, CLI, khung API và extension, test và CI. Quy trình làm việc ở `CONTRIBUTING.md`.
+- Việc còn lại của từng người được đánh dấu `TODO(<tên>)` trong code.
+- Python 3.11 (`uv venv --python 3.11`); máy dev có Python 3.14 hệ thống.
 
-## 3. Luồng dự án (theo kế hoạch gốc trong `CLAUDE.md`)
+## 3. Luồng dự án
 
 ```
 [1] Dữ liệu      BDD100K val: 10k ảnh + nhãn detection
@@ -116,12 +114,11 @@ Xoá nhãn ưu tiên object nhỏ (< 30px), bị che, ảnh đêm. Đổi class 
 | Detector | YOLOv8n | RT-DETR |
 | Kiểm tay | 50 ảnh | 500 ảnh × 2 người (≈ 25 giờ công, không vừa thời gian) |
 | Phạm vi | Không có LLM/VLM | LLM trích spec + Qwen2.5-VL |
-| GPU | RTX 3050 Ti trong `CLAUDE.md` | "≥ 12GB"; driver đang lỗi |
-| Ai code | Chỉ lead code (`CLAUDE.md` 8.1) | Đang cân nhắc chia cho cả 4 người |
+| Ai code | Chỉ lead code | Đã chốt: chia theo module cho cả 4 người |
 
 Gợi ý khi thời gian ngắn: giữ kế hoạch gốc, thêm phần cốt lõi của 4.1 (spec viết tay, lọc theo spec, rule ID), kiểm tay 150–200 ảnh, bỏ VLM và LLM trích spec (ghi là hướng phát triển).
 
-**Đã chốt 11/10:** LLM đọc guideline → spec YAML (mỗi luật kèm câu trích + trang) → người duyệt → rule engine (phép C) chạy 100% ảnh; luật phải nhìn ảnh giao cho VLM trên top 30%. Bước LLM làm ở Vòng 2 / Mốc 2; VLM vẫn ở Vòng 4, cắt nếu trễ. Chi tiết: mục 3 của `M13_QUY_TRINH.html`.
+**Đã chốt 11/10:** LLM đọc guideline → spec YAML (mỗi luật kèm câu trích + trang) → người duyệt → rule engine (phép C) chạy 100% ảnh; luật phải nhìn ảnh giao cho VLM trên top 30%. Bước LLM làm ở Vòng 2 / Mốc 2; VLM vẫn ở Vòng 4, cắt nếu trễ. Chi tiết: mục 3 của `de-xuat.html`.
 
 ## 6. Bài học từ 3 tuần gán nhãn (dùng cho M13)
 
@@ -130,7 +127,7 @@ Gợi ý khi thời gian ngắn: giữ kế hoạch gốc, thêm phần cốt l�
 - **Review không để lại dấu vết** trên CVAT (0 issue) → hàng đợi cần ghi lại verdict và thời gian xem.
 - Số liệu thô: khoảng 30 phút gán mỗi frame, review khoảng 1 giờ mỗi job.
 
-## 7. Đề xuất chia việc (chưa duyệt)
+## 7. Chia việc (đã chốt, chi tiết ở `CONTRIBUTING.md`)
 
 Chia theo module, mỗi người chỉ sửa thư mục của mình:
 
@@ -148,7 +145,7 @@ Chia theo module, mỗi người chỉ sửa thư mục của mình:
 
 **Thứ tự để không ai phải chờ:** Sơn tải dữ liệu trước tiên; Cường tạo sẵn file mẫu cho 2 quy ước trên để Sơn và Tú Anh code trước khi có dữ liệu thật; YOLO chạy nền trong lúc viết phần so khớp; kiểm tay 100 ảnh ngẫu nhiên làm trước, 100 ảnh top hàng đợi làm sau.
 
-**Git:** repo private chung; mỗi người một nhánh `feat/...`; `git pull --rebase` mỗi sáng; PR nhỏ, merge trong ngày; `pytest -q && ruff check .` trước khi mở PR; Cường review và merge; không đưa dữ liệu/ảnh/model vào git (chia qua Drive).
+**Git:** repo private chung; mỗi việc một nhánh `<loại>/<tên>-<việc>` tạo từ `develop`, PR vào `develop`; chỉ Cường merge, `develop` vào `main` khi dự án hoàn thành; `git pull --rebase` mỗi sáng; PR nhỏ, merge trong ngày; `pytest -q && ruff check .` trước khi mở PR; Cường review và merge; không đưa dữ liệu/ảnh/model vào git (chia qua Drive).
 
 **Báo cáo tiến độ: 22:30 mỗi tối**, mẫu:
 ```
@@ -160,22 +157,21 @@ Link:      PR, file, ảnh kết quả
 Questions: câu hỏi cho nhóm
 ```
 
-## 8. Ghi chú kỹ thuật (để viết lại code Mốc 1 nhanh)
+## 8. Ghi chú kỹ thuật Mốc 1
 
-Code Mốc 1 đã từng được viết, chạy được và 13 test pass, sau đó bị xoá theo yêu cầu. Thiết kế đã dùng:
+Thiết kế đã thống nhất cho Mốc 1 (loader, chấm điểm rule và metric đã có trong base; tiêm lỗi và tín hiệu hình học làm tiếp theo thiết kế này):
 
 - **Loader:** đọc JSON danh sách frame của BDD100K (`name`, `attributes.weather/scene/timeofday`, `labels[].box2d/category/attributes.occluded/truncated`). Bỏ nhãn không có `box2d`. Chuẩn hoá tên class: `person→pedestrian`, `motor→motorcycle`, `bike→bicycle`. Giữ cả ảnh không có object. Ảnh 1280×720.
 - **Tiêm lỗi:** làm trên JSON gốc để giữ định dạng; chỉ chọn ảnh có ít nhất 1 box; mỗi object chỉ bị 1 lỗi; clip box vào khung ảnh. File đáp án `injected_errors.json` gồm `meta` (seed, trọng số), `image_order` (cho baseline thứ tự file), `splits` (image_id → split), `errors` (image_id, split, type, obj_id, category, box trước/sau).
 - **Tín hiệu hình học:** z-score của log diện tích và log tỉ lệ khung theo từng class (median/MAD, tính trên chính file nhãn); box chạm mép mà không có truncated; hai box cùng class trùng IoU > 0.5; hai box khác class trùng IoU > 0.7; class hiếm (< 1%); ảnh đông (theo bách phân vị 75–99); nhiều box nhỏ < 20px; điều kiện khó (đêm, mưa, tuyết, sương).
 - **Chấm điểm:** trung bình có trọng số các tín hiệu × 100; top 3 lý do theo `value × weight`; hoà điểm thì xếp theo `image_id`.
 - **Đánh giá:** recall theo ảnh và theo lỗi có trọng số, Precision, NDCG, time saved (random trung bình 20 seed), recall theo loại lỗi, gain curve; mỗi lần chạy ghi một dòng vào `reports/results.jsonl` kèm commit, seed, split.
-- **Tốc độ đo được** (10k ảnh giả lập): tiêm lỗi 1,5 giây, chấm điểm 30 giây.
+- **Tốc độ tham khảo** (bản thử trên 10k ảnh giả lập): tiêm lỗi 1,5 giây, chấm điểm 30 giây.
 
-## 9. Việc phải chốt trước khi làm tiếp
+## 9. Việc còn phải chốt
 
-1. Luồng 7 bước giữ nguyên, hay thêm bước chấm theo guideline (mục 4.1)?
-2. Chỉ lead code, hay chia code cho cả 4 người (mục 7)?
-3. Lùi các mốc thế nào khi Mốc 1 đã trễ?
-4. Giải quyết các mâu thuẫn ở mục 5 (công cụ review, detector, số ảnh kiểm tay, LLM/VLM).
+1. Công cụ review: CVAT + Chrome extension (kế hoạch gốc) hay FiftyOne.
+2. Detector: YOLOv8n (AGPL-3.0) hay RT-DETR / mmdetection (Apache-2.0).
+3. Số ảnh kiểm tay: đề xuất 150–200 ảnh × 2 người.
 
-**Việc làm ngay sau khi chốt:** tải BDD100K (100K Images phần val + Detection 2020 Labels), sửa driver GPU, tạo repo git private.
+Đã chốt: thêm bước chấm theo guideline (11/10); chia code theo module cho cả 4 người.

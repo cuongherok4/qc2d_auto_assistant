@@ -58,7 +58,7 @@ Lý do dùng model pretrained COCO thay vì train trên BDD: model train trên n
 
 Detector: kế hoạch gốc là YOLOv8n (Ultralytics, **AGPL-3.0**); câu trả lời Q15 nghiêng về RT-DETR / mmdetection (Apache-2.0) vì tool dùng nội bộ thật. Viết phần khớp tách khỏi phần chạy model để đổi detector chỉ phải đổi một hàm sinh parquet.
 
-GPU máy dev đang lỗi driver: nếu `torch.cuda.is_available()` là False, chạy trên Colab rồi tải parquet về, đừng cố chạy 10k ảnh trên CPU trong vòng lặp phát triển.
+Nếu `torch.cuda.is_available()` là False, chạy trên Colab rồi tải parquet về, đừng cố chạy 10k ảnh trên CPU trong vòng lặp phát triển.
 
 ## Test tối thiểu
 

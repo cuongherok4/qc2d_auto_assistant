@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "M13 Review Queue",
+  "version": "0.1.0",
+  "description": "Hàng đợi review nhãn ưu tiên theo rủi ro, mở đúng frame trong CVAT",
+  "permissions": ["sidePanel", "storage", "tabs"],
+  "host_permissions": ["http://127.0.0.1:8000/*"],
+  "background": {"service_worker": "background.js"},
+  "side_panel": {"default_path": "sidepanel.html"}
+}

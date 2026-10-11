@@ -1,0 +1,10 @@
+# Đường dẫn dữ liệu. Không hard-code đường dẫn trong code, luôn đọc từ đây.
+# Dữ liệu không đưa vào git; tải BDD100K về đúng các đường dẫn này.
+images_dir: data/bdd100k/images/100k/val
+labels_json: data/bdd100k/labels/det_20/det_val.json
+cache_dir: data/cache
+injected_dir: data/injected            # det_val_injected.json + injected_errors.json
+preds_parquet: data/yolo_preds.parquet # quy ước 2, giữ tên kể cả khi dùng RT-DETR
+review_db: data/review.db
+models_dir: models
+reports_dir: reports
