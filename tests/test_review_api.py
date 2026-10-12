@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -88,6 +89,25 @@ def test_persistence_retry_history_and_stats(setup_review):
     with restarted.app.state.store.connection() as db:
         with pytest.raises(Exception, match="append-only"):
             db.execute("UPDATE verdicts SET verdict='skip'")
+
+
+def test_batch_uses_its_own_evidence_instead_of_default_override(setup_review):
+    setup_review.evidence_file = setup_review.reports / "evidence_v1.jsonl"
+    queue = setup_review.reports / "ranked_queue_other.csv"
+    pd.DataFrame(
+        [["image-01", 0, 1, "Chưa chấm QC; 0 là giá trị giữ chỗ", "manual-unscored-other"]],
+        columns=QUEUE_COLS,
+    ).to_csv(queue, index=False)
+    evidence = queue.with_name("evidence_other.jsonl")
+    evidence.write_text(json.dumps({"image_id": "image-01", "boxes": []}) + "\n")
+    setup_review.queue_batches["other"] = str(queue)
+    client = TestClient(create_app(setup_review))
+    assert client.get("/image/image-01").json()["evidence"][0]["obj_id"] == "9"
+    assert client.get("/image/image-01?batch=other").json()["evidence"] == []
+    assert client.get("/queue?batch=other").json()["items"][0]["evidence"] == []
+    evidence.unlink()
+    result = client.get("/image/image-01?batch=other").json()
+    assert result["evidence"] == [] and result["warnings"]
 
 
 def test_detail_image_mapping_and_predictions(setup_review):
@@ -252,6 +272,7 @@ def test_model_gate_and_rollback(setup_review, after, accepted):
             "metric": "recall@20%",
             "recall_before": 0.8,
             "recall_after": after,
+            "split_manifest": {"train": ["image-01", "image-02"], "val": ["val-only"], "test": ["test-only"]},
         }
 
     app = create_app(setup_review, retrain_backend=backend)
@@ -270,3 +291,49 @@ def test_model_gate_and_rollback(setup_review, after, accepted):
         assert client.post("/model/rollback", json={"model_version": "v1"}).status_code == 200
         assert client.get("/model").json()["model_version"] == "v1"
         assert TestClient(create_app(setup_review)).get("/model").json()["model_version"] == "v1"
+
+
+@pytest.mark.parametrize("failure", ["crash", "leak", "reused_version"])
+def test_training_failure_retains_serving_and_waits_for_new_batch(setup_review, monkeypatch, failure):
+    setup_review.retrain_after = 2
+
+    def backend(**kwargs):
+        if failure == "crash":
+            raise RuntimeError("do not expose backend secrets")
+        frame = pd.read_csv(setup_review.queue_file)
+        frame.model_version = "v2"
+        path = setup_review.reports / "candidate.csv"
+        frame.to_csv(path, index=False)
+        return {
+            "model_version": "v2",
+            "queue_file": path,
+            "validation_split": "val",
+            "metric": "recall@20%",
+            "recall_before": 0.8,
+            "recall_after": 0.9,
+            "split_manifest": {"train": ["image-01", "image-02"], "val": ["image-01"], "test": ["test-only"]},
+        }
+
+    app = create_app(setup_review, retrain_backend=backend)
+    client = TestClient(app)
+    started = []
+    # Observe scheduling without running a competing background worker.
+    monkeypatch.setattr(
+        "src.api.models.threading",
+        SimpleNamespace(Thread=lambda **kw: type("Job", (), {"start": lambda self: started.append(True)})()),
+    )
+    if failure == "reused_version":
+        app.state.store.state("versions", {"v2": {"queue_id": "already-used"}})
+    for image in ("image-01", "image-02"):
+        assert client.post("/verdict", json=payload(client, image)).status_code == 200
+    assert len(started) == 1
+    assert client.post("/retrain").status_code == 503
+    info = client.get("/model").json()
+    assert info["model_version"] == "v1" and info["last_training"]["status"] == "failed"
+    assert "secrets" not in str(info)
+    app.state.models.maybe_retrain()
+    assert len(started) == 1
+    assert client.post("/verdict", json=payload(client, "image-03")).status_code == 200
+    assert len(started) == 1
+    assert client.post("/verdict", json=payload(client, "image-04")).status_code == 200
+    assert len(started) == 2

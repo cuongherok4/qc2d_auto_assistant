@@ -142,7 +142,8 @@ def test_pilot_export_preserves_observed_events_and_filters(tmp_path, monkeypatc
             is_audit=False,
         )
     output = tmp_path / "pilot.csv"
-    result = export_pilot(output, reviewer="unit reviewer", session_id="A")
+    assert export_pilot(output, reviewer="unit reviewer", session_id="A")["events"] == 0
+    result = export_pilot(output, reviewer="unit reviewer", session_id="A", include_development=True)
     assert result["events"] == 2
     session = result["sessions"][0]
     assert session["seconds"] == 15 and session["events"] == 2 and session["images"] == 1

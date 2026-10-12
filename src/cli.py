@@ -193,7 +193,11 @@ def cmd_serve(args) -> int:
 def cmd_doctor(args) -> int:
     from src.api.operations import doctor
 
-    print(json.dumps(doctor(), ensure_ascii=False, indent=2))
+    result = doctor(verify_cvat=args.verify_cvat)
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -209,8 +213,36 @@ def cmd_extension_pack(args) -> int:
 def cmd_pilot_export(args) -> int:
     from src.api.operations import export_pilot
 
-    result = export_pilot(args.out, reviewer=args.reviewer, session_id=args.session_id)
+    result = export_pilot(
+        args.out,
+        reviewer=args.reviewer,
+        session_id=args.session_id,
+        include_development=args.include_development,
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_guideline_review(args) -> int:
+    from src.guideline.review import review_sheet
+
+    path = review_sheet(args.draft, args.out or args.draft.with_suffix(".review.html"))
+    print(f"Phiếu đối chiếu, chưa duyệt -> {path}")
+    return 0
+
+
+def cmd_pilot_register(args) -> int:
+    from src.api.pilot import PilotPlan, register
+
+    result = register(PilotPlan.model_validate_json(args.plan.read_text()), confirmed=args.confirm_human)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_pilot_compare(args) -> int:
+    from src.api.pilot import compare
+
+    print(json.dumps(compare(args.first, args.second, args.out), ensure_ascii=False, indent=2))
     return 0
 
 
@@ -232,6 +264,65 @@ def cmd_cvat_import(args) -> int:
         args.name,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_cvat_prepare(args) -> int:
+    from src.api.cvat_install import prepare_install
+
+    print(json.dumps(prepare_install(args.out, project=args.project, port=args.port), indent=2))
+    return 0
+
+
+def cmd_cvat_restore(args) -> int:
+    from src.api.cvat_install import restore_source
+
+    print(json.dumps(restore_source(args.out), indent=2))
+    return 0
+
+
+def cmd_cvat_preflight(args) -> int:
+    from src.api.cvat_install import preflight
+
+    result = preflight(args.folder)
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def cmd_demo_prepare(args) -> int:
+    from src.api.demo_setup import prepare_demo
+
+    print(json.dumps(prepare_demo(args.out, image=args.image), ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_demo_connect(args) -> int:
+    from src.api.demo_setup import connect_demo
+
+    print(json.dumps(connect_demo(args.folder, args.url, args.name), ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_demo_pack(args) -> int:
+    from src.api.demo_setup import pack_demo
+
+    print(json.dumps(pack_demo(args.folder, args.out), ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_guideline_ui(args) -> int:
+    import uvicorn
+
+    from src.guideline.editor import create_editor
+
+    cfg = config.load("guideline-ui")
+    port = args.port or cfg["port"]
+    app = create_editor(args.drafts, args.approved)
+    print(f"Mở http://127.0.0.1:{port} · chỉ người dùng chủ động duyệt spec")
+    uvicorn.run(app, host=cfg["host"], port=port)
     return 0
 
 
@@ -280,12 +371,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--model", help="model Gemini; mặc định configs/guideline_extract.yaml")
     p.add_argument("--fixture-response", type=Path, help="chỉ dev: JSON offline, đánh dấu provider=fixture")
     p.set_defaults(fn=cmd_guideline_extract)
+    p = guideline.add_parser("review", help="tạo phiếu HTML đối chiếu nguồn/spec, không tự duyệt")
+    p.add_argument("draft", type=Path)
+    p.add_argument("--out", type=Path)
+    p.set_defaults(fn=cmd_guideline_review)
     p = guideline.add_parser("approve")
     p.add_argument("draft", type=Path)
     p.add_argument("--approved-by", required=True)
     p.add_argument("--confirm-reviewed", action="store_true", help="người duyệt xác nhận đã đọc PDF/spec")
     p.add_argument("--outdir", type=Path)
     p.set_defaults(fn=cmd_guideline_approve)
+    p = guideline.add_parser("ui", help="giao diện local sửa/duyệt spec, không gọi Gemini")
+    p.add_argument("--drafts", type=Path, required=True)
+    p.add_argument("--approved", type=Path, required=True)
+    p.add_argument("--port", type=int)
+    p.set_defaults(fn=cmd_guideline_ui)
     p = guideline.add_parser("samples", help="tạo 3 DOCX fixture và JSON offline cho dev")
     p.add_argument("--out", type=Path)
     p.set_defaults(fn=cmd_guideline_samples)
@@ -296,6 +396,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--reload", action="store_true")
     p.set_defaults(fn=cmd_serve)
     p = sub.add_parser("doctor", help="kiểm tra môi trường và đầu vào, không in credentials")
+    p.add_argument("--out", type=Path, help="lưu bằng chứng riêng cho máy đang kiểm tra")
+    p.add_argument(
+        "--verify-cvat", action="store_true", help="đọc nhãn/meta của từng ảnh để kiểm task/job/frame"
+    )
     p.set_defaults(fn=cmd_doctor)
     p = sub.add_parser("extension-pack", help="đóng gói extension MV3")
     p.add_argument("--out", type=Path)
@@ -304,7 +408,23 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", type=Path, required=True, help="dữ liệu đo thật: lưu trong data/, không commit")
     p.add_argument("--reviewer")
     p.add_argument("--session-id")
+    p.add_argument(
+        "--include-development",
+        action="store_true",
+        help="export fixture/development riêng, không dùng làm pilot",
+    )
     p.set_defaults(fn=cmd_pilot_export)
+    p = sub.add_parser("pilot-register", help="người review đăng ký phiên thật trước khi bắt đầu đo")
+    p.add_argument("--plan", type=Path, required=True)
+    p.add_argument("--confirm-human", action="store_true")
+    p.set_defaults(fn=cmd_pilot_register)
+    p = sub.add_parser(
+        "pilot-compare", help="so sánh hai summary pilot cùng snapshot, hai task và hai reviewer"
+    )
+    p.add_argument("first", type=Path)
+    p.add_argument("second", type=Path)
+    p.add_argument("--out", type=Path, required=True)
+    p.set_defaults(fn=cmd_pilot_compare)
     p = sub.add_parser("review-fixtures", help="tạo 3 ảnh tổng hợp/nhãn/queue/evidence để kiểm API và CVAT")
     p.add_argument("--out", type=Path)
     p.set_defaults(fn=cmd_review_fixtures)
@@ -315,6 +435,32 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--labels", type=Path)
     p.add_argument("--url")
     p.set_defaults(fn=cmd_cvat_import)
+
+    p = sub.add_parser("cvat-prepare", help="chuẩn bị Compose ghim phiên bản, project/cổng riêng")
+    p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--project")
+    p.add_argument("--port", type=int)
+    p.set_defaults(fn=cmd_cvat_prepare)
+    p = sub.add_parser("cvat-restore-source", help="khôi phục file nguồn đã mất, không ghi đè nội dung khác")
+    p.add_argument("--out", type=Path, required=True)
+    p.set_defaults(fn=cmd_cvat_restore)
+    p = sub.add_parser("cvat-preflight", help="kiểm tài nguyên/bộ cài/cổng trước khi dựng stack cô lập")
+    p.add_argument("folder", type=Path)
+    p.add_argument("--out", type=Path)
+    p.set_defaults(fn=cmd_cvat_preflight)
+    p = sub.add_parser("demo-prepare", help="demo mang sang máy khác, chạy lại không reset dữ liệu")
+    p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--image", type=Path, help="JPEG/PNG 1280×720, không có nhãn/QC")
+    p.set_defaults(fn=cmd_demo_prepare)
+    p = sub.add_parser("demo-connect", help="import task mới hoặc đọc lại task đã đăng ký, sinh mapping")
+    p.add_argument("folder", type=Path)
+    p.add_argument("--url", default="http://localhost:8080")
+    p.add_argument("--name", required=True)
+    p.set_defaults(fn=cmd_demo_connect)
+    p = sub.add_parser("demo-pack", help="đóng gói demo, loại DB/mapping/credentials của máy")
+    p.add_argument("folder", type=Path)
+    p.add_argument("--out", type=Path, required=True)
+    p.set_defaults(fn=cmd_demo_pack)
 
     args = ap.parse_args(argv)
     try:

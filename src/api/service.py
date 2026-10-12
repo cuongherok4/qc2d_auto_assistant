@@ -8,6 +8,7 @@ import json
 import math
 import random
 import re
+import threading
 from pathlib import Path
 
 import pandas as pd
@@ -30,6 +31,7 @@ class QueueService:
     def __init__(self, settings: Settings, store: ReviewStore):
         self.settings, self.store = settings, store
         self._cache: dict = {}
+        self.activation_lock = threading.Lock()
 
     def snapshot(self, batch: str | None = None) -> tuple[pd.DataFrame, str, Path | None]:
         active = self.store.state("model") or {}
@@ -102,15 +104,30 @@ class QueueService:
                 return path
         return None
 
-    def evidence(self, path: Path | None) -> tuple[dict, list[str]]:
-        source = self.settings.evidence_file or (
-            path.with_name(path.stem.replace("ranked_queue_", "evidence_") + ".jsonl") if path else None
+    def evidence(self, path: Path | None, batch: str | None = None) -> tuple[dict, list[str]]:
+        active = self.store.state("model") or {}
+        active_evidence = (
+            Path(active["evidence_file"])
+            if active.get("evidence_file") and path and Path(active.get("queue_file", "")) == path
+            else None
+        )
+        source = (
+            active_evidence
+            or (self.settings.evidence_file if batch is None else None)
+            or (path.with_name(path.stem.replace("ranked_queue_", "evidence_") + ".jsonl") if path else None)
         )
         if source is None or not source.exists():
             return {}, ["Chưa có evidence từ pipeline"]
         try:
             items = {}
-            for line in source.read_text(encoding="utf-8").splitlines():
+            raw = source.read_bytes()
+            if (
+                active_evidence
+                and active.get("evidence_sha256")
+                and hashlib.sha256(raw).hexdigest() != active["evidence_sha256"]
+            ):
+                raise ValueError("Evidence của snapshot đang phục vụ đã đổi nội dung")
+            for line in raw.decode("utf-8").splitlines():
                 if not line.strip():
                     continue
                 row = json.loads(line)
@@ -148,6 +165,8 @@ class QueueService:
                 raise ValueError("thiếu cột mapping")
             if frame.image_id.duplicated().any():
                 raise ValueError("mapping mơ hồ: image_id trùng")
+            if frame.duplicated(["task_id", "job_id", "frame"]).any():
+                raise ValueError("mapping mơ hồ: nhiều ảnh cùng task/job/frame")
             result = {}
             for row in frame.to_dict("records"):
                 if any(
@@ -213,7 +232,7 @@ class QueueService:
             }
         )
         remaining = [image_id for image_id in ids if image_id not in reviewed]
-        boxes, evidence_warnings = self.evidence(path)
+        boxes, evidence_warnings = self.evidence(path, batch)
         mapping, cvat_warnings = self.mapping()
         rows = frame.set_index("image_id", drop=False).to_dict("index")
         return {
@@ -240,7 +259,7 @@ class QueueService:
         rows = frame[frame.image_id == image_id]
         if rows.empty:
             raise HTTPException(404, "Ảnh không thuộc hàng đợi")
-        boxes, ew = self.evidence(path)
+        boxes, ew = self.evidence(path, batch)
         mapping, mw = self.mapping()
         result = self.enrich(rows.iloc[0].to_dict(), current_id, batch, boxes, mapping)
         result["warnings"] = ew + mw
@@ -270,8 +289,27 @@ class QueueService:
             image_id in audit_ids
         )
 
-    def stats(self, *, batch=None, reviewer=None, session_id=None, order=None) -> dict:
-        frame, queue_id, _ = self.snapshot(batch)
+    def stats(self, *, batch=None, reviewer=None, session_id=None, order=None, queue_id=None) -> dict:
+        frame, current_id, _ = self.snapshot(batch)
+        if queue_id and queue_id != current_id:
+            if batch:
+                raise HTTPException(422, "Chọn batch hoặc snapshot lịch sử, không chọn cả hai")
+            saved = next(
+                (v for v in (self.store.state("versions") or {}).values() if v["queue_id"] == queue_id),
+                None,
+            )
+            if saved is None:
+                raise HTTPException(404, "Không có snapshot lịch sử này")
+            try:
+                raw = Path(saved["queue_file"]).read_bytes()
+                if hashlib.sha256(raw).hexdigest() != queue_id:
+                    raise ValueError("Snapshot lịch sử đã đổi nội dung")
+                frame = pd.read_csv(io.BytesIO(raw), dtype={"image_id": str, "model_version": str})
+                if contracts.check_queue(frame):
+                    raise ValueError("Snapshot lịch sử không hợp lệ")
+            except (OSError, ValueError) as exc:
+                raise HTTPException(503, str(exc)) from exc
+        queue_id = queue_id or current_id
         history = self.store.records(
             queue_id=queue_id, reviewer=reviewer, session_id=session_id, review_order=order
         )

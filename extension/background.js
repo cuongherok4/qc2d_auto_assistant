@@ -1,5 +1,5 @@
 /* All HTTP calls and the focus-aware review clock live in the MV3 worker. */
-const DEFAULTS = {apiUrl: "http://127.0.0.1:8000", reviewer: "", batch: "", sessionId: "default", order: "priority"};
+const DEFAULTS = {apiUrl: "http://127.0.0.1:8000", guidelineUrl: "http://127.0.0.1:8010", reviewer: "", batch: "", sessionId: "default", order: "priority"};
 let operations = Promise.resolve();
 const serial = (fn) => {
   const next = operations.then(fn, fn);
@@ -17,8 +17,19 @@ function localUrl(value) {
 async function settings() {
   return {...DEFAULTS, ...(await chrome.storage.local.get("settings")).settings};
 }
+async function openGuideline() {
+  const cfg = await settings();
+  const url = localUrl(cfg.guidelineUrl);
+  const tabs = await chrome.tabs.query({url: `${url.origin}/*`});
+  const existing = tabs.find(tab => tab.url === url.href);
+  if (existing) {
+    await chrome.windows.update(existing.windowId, {focused: true});
+    await chrome.tabs.update(existing.id, {active: true});
+  } else await chrome.tabs.create({url: url.href});
+  return {opened: true};
+}
 async function api(path, method = "GET", body) {
-  if (!/^\/(health|queue|stats|model|image\/[^/?]+(?:\/file)?|verdict)(?:\?|$)/.test(path) || path.includes("..")) {
+  if (!/^\/(health|queue|stats|model|image\/[^/?]+(?:\/(file|saved|recheck))?|rechecks\/[A-Za-z0-9-]+|verdict)(?:\?|$)/.test(path) || path.includes("..")) {
     throw new Error("API path không được phép.");
   }
   const cfg = await settings();
@@ -68,7 +79,7 @@ async function refreshClock() {
   const value = await state();
   if (!value) return null;
   accrue(value);
-  if (!value.pending) {
+  if (!value.pending && !value.recheckPending) {
     try {
       const [tab, win] = await Promise.all([chrome.tabs.get(value.tabId), chrome.windows.get(value.windowId)]);
       // Frame changes and another focused tab pause the clock even in the same CVAT job.
@@ -87,11 +98,13 @@ async function refreshClock() {
 function publicClock(value) {
   if (!value) return {active: false};
   return {active: true, imageId: value.detail.image_id, running: value.runningSince !== null,
-    seconds: value.elapsedMs / 1000, pending: value.pending, detail: value.detail};
+    seconds: value.elapsedMs / 1000, pending: value.pending, detail: value.detail,
+    savedSnapshot: value.savedSnapshot || null, recheckPending: value.recheckPending || null};
 }
 async function openImage(message) {
   const old = await refreshClock();
   if (old?.pending) throw new Error("Còn verdict chưa xác nhận. Thử gửi lại trước khi đổi ảnh.");
+  if (old?.recheckPending) throw new Error("Còn yêu cầu kiểm tra lại chưa xác nhận. Thử lại trước khi đổi ảnh.");
   const cfg = await settings();
   if (!cfg.reviewer.trim()) throw new Error("Điền tên reviewer trong Cài đặt trước khi review.");
   const query = new URLSearchParams({queue_id: message.queueId});
@@ -117,6 +130,7 @@ async function openImage(message) {
 async function saveVerdict(message) {
   const value = await refreshClock();
   if (!value) throw new Error("Chọn ảnh và mở CVAT trước khi ghi verdict.");
+  if (value.recheckPending) throw new Error("Xác nhận kết quả kiểm tra lại trước khi gửi verdict.");
   if (!value.pending) {
     if (!["error", "false_alarm", "skip"].includes(message.verdict)) throw new Error("Verdict không hợp lệ.");
     accrue(value);
@@ -139,6 +153,48 @@ async function saveVerdict(message) {
   await persist(null);
   return result;
 }
+async function readSaved() {
+  const value = await refreshClock();
+  if (!value || value.pending || value.recheckPending) throw new Error("Chọn ảnh, xử lý yêu cầu đang chờ trước khi đọc nhãn.");
+  const cfg = await settings();
+  const query = new URLSearchParams({queue_id: value.detail.queue_id});
+  if (cfg.batch) query.set("batch", cfg.batch);
+  const saved = await api(`/image/${encodeURIComponent(value.detail.image_id)}/saved?${query}`);
+  value.savedSnapshot = saved;
+  await persist(value);
+  return saved;
+}
+async function recheckImage() {
+  const value = await refreshClock();
+  if (!value || value.pending) throw new Error("Chọn ảnh và xử lý verdict đang chờ trước khi kiểm tra lại.");
+  if (!value.recheckPending) {
+    if (!value.savedSnapshot?.backend_ready) throw new Error("Đọc nhãn đã Save trước; backend QC cần sẵn sàng.");
+    accrue(value);
+    value.recheckPending = {request_id: crypto.randomUUID(), queue_id: value.detail.queue_id,
+      snapshot_id: value.savedSnapshot.snapshot_id};
+    await persist(value);
+  }
+  let result;
+  try { result = await api(`/image/${encodeURIComponent(value.detail.image_id)}/recheck`, "POST", value.recheckPending); }
+  catch (failure) {
+    let status;
+    try { status = await api(`/rechecks/${value.recheckPending.request_id}`); }
+    catch (checkFailure) {
+      if (checkFailure.status === 404) { value.recheckPending = null; await persist(value); }
+      throw failure;
+    }
+    if (status.status === "completed") result = status.result;
+    else if (status.status === "failed") { value.recheckPending = null; await persist(value); throw failure; }
+    else throw failure; // Running/unknown: retain the durable request ID.
+  }
+  const cfg = await settings();
+  const query = new URLSearchParams();
+  if (cfg.batch) query.set("batch", cfg.batch);
+  value.detail = await api(`/image/${encodeURIComponent(value.detail.image_id)}?${query}`);
+  value.recheckPending = null; value.savedSnapshot = null;
+  await persist(value);
+  return {result, detail: value.detail};
+}
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
   serial(async () => {
@@ -146,17 +202,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case "SETTINGS": return settings();
       case "SAVE_SETTINGS": {
         localUrl(message.settings.apiUrl);
+        localUrl(message.settings.guidelineUrl ?? DEFAULTS.guidelineUrl);
         const current = await state();
-        if (current?.pending) throw new Error("Gửi lại verdict đang chờ trước khi đổi cài đặt.");
+        if (current?.pending || current?.recheckPending) throw new Error("Xử lý yêu cầu đang chờ trước khi đổi cài đặt.");
         if (!["priority", "file"].includes(message.settings.order)) throw new Error("Thứ tự không hợp lệ.");
         await persist(null);
         await chrome.storage.local.set({settings: {...DEFAULTS, ...message.settings}});
         return settings();
       }
       case "API": return api(message.path, "GET");
+      case "OPEN_GUIDELINE": return openGuideline();
       case "OPEN_IMAGE": return openImage(message);
       case "CLOCK": return publicClock(await refreshClock());
       case "SAVE_VERDICT": return saveVerdict(message);
+      case "READ_SAVED": return readSaved();
+      case "RECHECK": return recheckImage();
       default: throw new Error("Thao tác không hỗ trợ.");
     }
   }).then(value => sendResponse({ok: true, value}), error => sendResponse({ok: false, error: error.message}));

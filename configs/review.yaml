@@ -9,6 +9,11 @@ server_host: 127.0.0.1
 server_port: 8000
 fixture_dir: data/samples/review
 queue_file: null
-queue_batches: {} # batch_id: reports/ranked_queue_<version>.csv
+queue_batches: # Optional local batches; their input files stay outside Git.
+  bdd01: data/bdd01-manual/ranked_queue_manual-unscored-v1.csv
 evidence_file: null
-retrain_backend: null # module:function; xem docs/tuanh-demo.md
+retrain_backend: null # module:function; adapter nhận manifest split và metrics val từ backend ML
+recheck_backend: null # module:function; chỉ gọi sau khi đọc nhãn đã Save từ CVAT
+snapshot_dir: data/cvat-snapshots
+recheck_dir: data/rechecks
+data_purpose: development # Chỉ đặt real khi dùng dữ liệu thật đã xác minh; pilot kiểm trường này.

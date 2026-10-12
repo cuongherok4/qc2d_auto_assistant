@@ -11,6 +11,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.api.models import ModelManager
+from src.api.pilot import validate_verdict
+from src.api.recheck import RecheckManager
+from src.api.saved_labels import SavedLabels
 from src.api.schemas import ImageDetail, QueueResponse, SavedVerdict
 from src.api.service import QueueService
 from src.api.settings import Settings
@@ -47,14 +50,26 @@ class Rollback(BaseModel):
     model_version: str = Field(min_length=1, max_length=200)
 
 
-def create_app(settings: Settings | None = None, *, retrain_backend=None) -> FastAPI:
+class RecheckRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    request_id: str = Field(pattern=r"^[A-Za-z0-9-]{1,100}$")
+    snapshot_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    queue_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+def create_app(
+    settings: Settings | None = None, *, retrain_backend=None, recheck_backend=None, cvat_client=None
+) -> FastAPI:
     settings = settings or Settings.configured()
     store = ReviewStore(settings.database)
     service = QueueService(settings, store)
     models = ModelManager(settings, store, service, retrain_backend)
+    saved = SavedLabels(settings, service, cvat_client)
+    rechecks = RecheckManager(settings, store, service, saved, recheck_backend)
     app = FastAPI(title="M13 Review Queue", version="0.2.0")
     app.state.settings, app.state.store, app.state.service = settings, store, service
     app.state.models = models
+    app.state.rechecks = rechecks
     origins = list(dict.fromkeys([settings.cvat_url.rstrip("/"), *settings.allowed_origins]))
     app.add_middleware(
         CORSMiddleware,
@@ -108,6 +123,18 @@ def create_app(settings: Settings | None = None, *, retrain_backend=None) -> Fas
     def image(image_id: str, batch: str | None = None, queue_id: str | None = None):
         return service.detail(image_id, batch, queue_id)
 
+    @app.get("/image/{image_id}/saved")
+    def saved_image(image_id: str, batch: str | None = None, queue_id: str | None = None):
+        return rechecks.capture(image_id, batch, queue_id)
+
+    @app.post("/image/{image_id}/recheck")
+    def recheck_image(image_id: str, value: RecheckRequest):
+        return rechecks.run(image_id, value.model_dump())
+
+    @app.get("/rechecks/{request_id}")
+    def recheck_status(request_id: str):
+        return rechecks.status(request_id)
+
     @app.post("/verdict", response_model=SavedVerdict)
     def verdict(value: Verdict):
         payload = value.model_dump()
@@ -124,6 +151,7 @@ def create_app(settings: Settings | None = None, *, retrain_backend=None) -> Fas
                     raise HTTPException(409, f"{key} không khớp hàng đợi đang phục vụ")
                 payload[key] = detail[key]
             audit = value.review_order == "priority" and is_audit
+            validate_verdict(store, settings, payload)
         try:
             saved, duplicate = store.append(payload, is_audit=audit)
         except DuplicateSubmission as exc:
@@ -139,8 +167,11 @@ def create_app(settings: Settings | None = None, *, retrain_backend=None) -> Fas
         reviewer: str | None = None,
         session_id: str | None = None,
         order: ReviewOrder | None = None,
+        queue_id: str | None = None,
     ):
-        return service.stats(batch=batch, reviewer=reviewer, session_id=session_id, order=order)
+        return service.stats(
+            batch=batch, reviewer=reviewer, session_id=session_id, order=order, queue_id=queue_id
+        )
 
     @app.get("/model")
     def model():

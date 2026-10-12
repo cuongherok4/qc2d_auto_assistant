@@ -18,10 +18,12 @@ from src.guideline.schema import ExtractedSpec
 SAMPLES = json.loads((Path(__file__).parent / "fixtures/guidelines/samples.json").read_text())
 
 
-def make_pdf(path, lines):
+def make_pdf(path, lines, *, stream=None):
     """Small original text PDF; no OCR or external tools needed for unit tests."""
     escaped = [line.replace("(", "\\(").replace(")", "\\)") for line in lines]
-    stream = "BT /F1 10 Tf 40 700 Td " + " ".join(f"({line}) Tj 0 -20 Td" for line in escaped) + " ET"
+    stream = stream or (
+        "BT /F1 10 Tf 40 700 Td " + " ".join(f"({line}) Tj 0 -20 Td" for line in escaped) + " ET"
+    )
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -74,6 +76,86 @@ def test_extract_schema_quotes_cache_and_unapproved(sample, tmp_path):
     make_pdf(file, [*SAMPLES[0]["paragraphs"][1:], "Source changed."])
     extract(file, tmp_path / "drafts", options=options, backend=backend)
     assert len(calls) == 3
+
+
+def test_small_font_pdf_word_gaps_and_quote_verification(tmp_path):
+    import pdfplumber
+
+    source = tmp_path / "tight-words.pdf"
+    make_pdf(source, [], stream="BT /F1 10 Tf 40 700 Td [(Box) -200 (car)] TJ ET")
+    with pdfplumber.open(source) as document:
+        assert document.pages[0].extract_text() == "Boxcar"
+    document = read_document(source, tmp_path / "cache", text_options={"x_tolerance_ratio": 0.15})
+    assert document["pages"][0]["text"] == "Box car"
+    assert not quote_problems(
+        {"facts": [{"field": "classes", "page": 1, "quote": "Box car"}]}, document["pages"]
+    )
+    assert quote_problems(
+        {"facts": [{"field": "classes", "page": 1, "quote": "Box truck"}]}, document["pages"]
+    )
+
+
+def test_cache_changes_when_extracted_pages_change(sample, tmp_path, monkeypatch):
+    import src.guideline.extract as module
+
+    file, options = sample
+    calls = []
+    def backend(*args):
+        calls.append(True)
+        return copy.deepcopy(SAMPLES[0]["response"])
+    path = extract(file, tmp_path / "drafts", options=options, backend=backend)
+    previous = yaml.safe_load(path.read_text())["extraction"]["cache_id"]
+    original = module.read_document
+    def changed(*args, **kwargs):
+        document = original(*args, **kwargs)
+        document["pages_sha256"] = "a different extractor's text hash"
+        return document
+    monkeypatch.setattr(module, "read_document", changed)
+    extract(file, tmp_path / "drafts", options=options, backend=backend)
+    assert len(calls) == 2
+    assert yaml.safe_load(path.read_text())["extraction"]["cache_id"] != previous
+
+
+def test_table_citation_stays_on_its_page_and_in_one_cell():
+    pages = [
+        {"page": 1, "text": "Table columns interleaved", "tables": [[["car, truck", "bus"]]]},
+        {"page": 2, "text": "Another page"},
+    ]
+    fact = {"field": "classes", "page": 1, "quote": "car, truck"}
+    assert not quote_problems({"facts": [fact]}, pages)
+    assert quote_problems({"facts": [{**fact, "page": 2}]}, pages)
+    assert quote_problems({"facts": [{**fact, "quote": "car, truck bus"}]}, pages)
+
+
+def test_extract_preserves_valid_draft_corrections(sample, tmp_path):
+    file, options = sample
+    path = extract(file, tmp_path / "drafts", options=options, backend=lambda *args: SAMPLES[0]["response"])
+    spec = yaml.safe_load(path.read_text())
+    spec["rules"][0]["message"] = "Reviewer sửa cách diễn đạt"
+    spec["extraction"]["draft_corrections"] = [{"rule_id": "R1", "reason": "sửa bản nháp"}]
+    path.write_text(yaml.safe_dump(spec, allow_unicode=True))
+    before = path.read_bytes()
+    def forbidden(*args):
+        raise AssertionError("Valid cache must avoid the backend")
+    assert extract(file, tmp_path / "drafts", options=options, backend=forbidden).read_bytes() == before
+
+
+def test_review_sheet_escapes_content_and_keeps_draft_unapproved(sample, tmp_path):
+    from src.guideline.review import review_sheet
+
+    file, options = sample
+    path = extract(file, tmp_path / "drafts", options=options, backend=lambda *args: SAMPLES[0]["response"])
+    spec = yaml.safe_load(path.read_text())
+    spec["rules"][0]["message"] = "<script>alert('source injection')</script>"
+    path.write_text(yaml.safe_dump(spec))
+    before = path.read_bytes()
+    output = review_sheet(path, tmp_path / "review.html")
+    text = output.read_text()
+    assert "<script>" not in text and "&lt;script&gt;" in text
+    assert "chưa duyệt" in text and "Nguồn trích" in text
+    assert path.read_bytes() == before and yaml.safe_load(path.read_text())["approved_by"] == ""
+    with pytest.raises(ValueError, match="ghi đè"):
+        review_sheet(path, file)
 
 
 def test_invalid_quote_blocks_approval(sample, tmp_path):
@@ -134,6 +216,24 @@ def test_page_numbers_and_empty_source(tmp_path):
         read_document(file, tmp_path / "cache")
 
 
+def test_loading_approved_rechecks_schema_quote_and_source(sample, tmp_path, monkeypatch):
+    file, options = sample
+    path = extract(file, tmp_path / "drafts", options=options, backend=lambda *args: SAMPLES[0]["response"])
+    original_load = config.load
+    monkeypatch.setattr(config, "load", lambda name: {**original_load(name), **options})
+    approved = approve(path, "Fixture reviewer", acknowledged=True, outdir=tmp_path / "approved")
+    spec = yaml.safe_load(approved.read_text())
+    spec["rules"][0]["quote"] = "Not in the source."
+    approved.write_text(yaml.safe_dump(spec))
+    with pytest.raises(ApprovalError, match="quote"):
+        load_approved(approved)
+    spec["rules"][0]["quote"] = SAMPLES[0]["response"]["rules"][0]["quote"]
+    approved.write_text(yaml.safe_dump(spec))
+    file.write_bytes(file.read_bytes() + b"\nChanged after approval")
+    with pytest.raises(ApprovalError, match="Nguồn đã đổi"):
+        load_approved(approved)
+
+
 @pytest.mark.parametrize("schema_mode", ["responseFormat", "responseJsonSchema"])
 def test_gemini_rest_schema_temperature_and_key_sanitization(monkeypatch, schema_mode):
     monkeypatch.setenv("GEMINI_API_KEY", "unit-secret-value")
@@ -162,6 +262,10 @@ def test_gemini_rest_schema_temperature_and_key_sanitization(monkeypatch, schema
     body = json.loads(seen[0].content)
     assert body["generationConfig"]["temperature"] == 0
     assert schema_mode in body["generationConfig"]
+    if schema_mode == "responseFormat":
+        assert body["generationConfig"]["responseFormat"]["text"]["mimeType"] == "APPLICATION_JSON"
+    else:
+        assert body["generationConfig"]["responseMimeType"] == "application/json"
     assert seen[0].headers["x-goog-api-key"] == "unit-secret-value"
     assert "unit-secret-value" not in str(seen[0].url)
     assert result["id"] == SAMPLES[0]["id"]

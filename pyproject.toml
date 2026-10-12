@@ -27,6 +27,9 @@ dev = ["pytest>=8", "ruff>=0.4"]
 [tool.setuptools.packages.find]
 include = ["src*"]
 
+[tool.setuptools.package-data]
+"src.guideline" = ["web/*.html", "web/*.css", "web/*.js"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["data: cần dữ liệu BDD100K thật trong data/ (tự bỏ qua nếu chưa có)"]

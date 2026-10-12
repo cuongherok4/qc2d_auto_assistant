@@ -1,0 +1,12 @@
+{
+  "version": "v2.74.1",
+  "compose_source": "https://raw.githubusercontent.com/cvat-ai/cvat/v2.74.1/docker-compose.yml",
+  "compose_retrieval": "Official web reader; complete 410 lines reconstructed with LF",
+  "analytics_source": "Read-only runtime files from existing CVAT v2.74.1 containers",
+  "dashboard_restored": false,
+  "files": {
+    "docker-compose.yml": "7dd72a654534e6a7dc8f1a8ec976566ffb3d42db32d7f94c99d22b389859acd5",
+    "components/analytics/grafana_conf.yml": "bb828236e1ff8a6b94cd1fc949c65a94a362a35753cc7253548eec6b7b034127",
+    "components/analytics/vector/vector.toml": "76c0bac76d62f07c8462e42ab725fbcf4f2294744e249d629d255d04d9214f0b"
+  }
+}

@@ -1,11 +1,18 @@
 const $ = id => document.getElementById(id);
 let cfg, items = [], selected = null, loading = false, saving = false, pending = null;
 let cursor = 0, generation = 0, selectionGeneration = 0;
+let savedSnapshot = null, recheckPending = null;
 async function worker(message) {
   const reply = await chrome.runtime.sendMessage(message);
   if (!reply?.ok) throw new Error(reply?.error || "Service worker không phản hồi.");
   return reply.value;
 }
+$("open-guideline").onclick = async () => {
+  $("open-guideline").disabled = true;
+  try { await worker({type: "OPEN_GUIDELINE"}); error(""); }
+  catch (err) { error(err.message); }
+  finally { $("open-guideline").disabled = false; }
+};
 function error(message) { $("error").hidden = !message; $("error").textContent = message || ""; }
 function reasonNode(reason) {
   const li = document.createElement("li");
@@ -23,9 +30,12 @@ function query(offset = 0) {
   return params;
 }
 function actions() {
-  document.querySelectorAll("[data-verdict]").forEach(button => button.disabled = saving || !selected || !!pending);
+  document.querySelectorAll("[data-verdict]").forEach(button => button.disabled = saving || !selected || !!pending || !!recheckPending);
   $("retry").hidden = !pending;
   $("retry").disabled = saving;
+  $("read-saved").disabled = saving || !selected || !!pending || !!recheckPending;
+  $("recheck").disabled = saving || !selected || !!pending || (!recheckPending && !savedSnapshot?.backend_ready);
+  $("recheck").textContent = recheckPending ? "Thử kiểm tra lại" : "Kiểm tra lại lỗi";
 }
 function renderQueue() {
   $("queue").replaceChildren();
@@ -33,9 +43,11 @@ function renderQueue() {
     const li = document.createElement("li"), button = document.createElement("button");
     button.className = `row${selected?.image_id === row.image_id ? " active" : ""}`;
     button.dataset.imageId = row.image_id;
-    button.disabled = saving || !!pending;
+    button.disabled = saving || !!pending || !!recheckPending;
     const title = document.createElement("span");
-    title.className = "rank"; title.textContent = `#${row.rank} · ${Number(row.risk_score).toFixed(1)} điểm · ${row.image_id}`;
+    const score = row.model_version?.startsWith("manual-unscored-")
+      ? "Chưa chấm QC" : `${Number(row.risk_score).toFixed(1)} điểm`;
+    title.className = "rank"; title.textContent = `#${row.rank} · ${score} · ${row.image_id}`;
     button.append(title);
     const reasons = document.createElement("ul");
     (row.reasons || []).slice(0, 3).forEach(reason => reasons.append(reasonNode(reason)));
@@ -103,12 +115,14 @@ async function showDetail(detail) {
   actions(); renderQueue();
 }
 async function selectImage(row) {
-  if (saving || pending) return;
+  if (saving || pending || recheckPending) return;
   error(""); const mine = ++selectionGeneration;
   try {
     const clock = await worker({type: "OPEN_IMAGE", imageId: row.image_id, queueId: row.queue_id});
     if (mine !== selectionGeneration) return;
     pending = clock.pending; $("note").value = "";
+    savedSnapshot = clock.savedSnapshot; recheckPending = clock.recheckPending;
+    showSaved();
     await showDetail(clock.detail); await updateClock();
   } catch (err) { error(err.message); }
 }
@@ -116,16 +130,46 @@ async function updateClock() {
   try {
     const clock = await worker({type: "CLOCK"});
     if (!clock.active) {
-      pending = null; selected = null; $("selected").hidden = true; actions();
+      pending = null; selected = null; savedSnapshot = null; recheckPending = null; $("selected").hidden = true; actions();
       return;
     }
     pending = clock.pending;
-    $("timer").textContent = `${clock.seconds.toFixed(1)} giây · ${pending ? "chờ lưu verdict" : clock.running ? "đang xem CVAT" : "tạm dừng (CVAT mất focus / đổi frame)"}`;
+    savedSnapshot = clock.savedSnapshot; recheckPending = clock.recheckPending;
+    $("timer").textContent = `${clock.seconds.toFixed(1)} giây · ${pending ? "chờ lưu verdict" : recheckPending ? "chờ kiểm tra lại" : clock.running ? "đang xem CVAT" : "tạm dừng (CVAT mất focus / đổi frame)"}`;
     actions();
   } catch (err) { error(err.message); }
 }
+function showSaved() {
+  $("saved-labels").replaceChildren();
+  if (!savedSnapshot) {
+    $("saved-status").textContent = "Điểm hiện tại thuộc lần chấm trước. Đọc nhãn đã Save để kiểm tra lại.";
+    return;
+  }
+  $("saved-status").textContent = `Đã đọc ${savedSnapshot.box_count} box được lưu trong CVAT. ${savedSnapshot.backend_ready ? "Có thể kiểm tra lại lỗi." : "Chưa có backend QC cho queue này; điểm chưa thay đổi."}`;
+  for (const [index, box] of savedSnapshot.boxes.entries()) {
+    const li = document.createElement("li");
+    li.textContent = `Box ${index + 1} · ${box.category} · [${box.box.map(n => Number(n).toFixed(1)).join(", ")}]`;
+    $("saved-labels").append(li);
+  }
+}
+$("read-saved").addEventListener("click", async () => {
+  saving = true; actions(); error("");
+  try { savedSnapshot = await worker({type: "READ_SAVED"}); showSaved(); }
+  catch (err) { error(err.message); }
+  finally { saving = false; actions(); }
+});
+$("recheck").addEventListener("click", async () => {
+  saving = true; actions(); renderQueue(); error("");
+  try {
+    const result = await worker({type: "RECHECK"});
+    savedSnapshot = null; recheckPending = null;
+    await showDetail(result.detail); showSaved(); await loadQueue();
+    $("status").textContent = `Đã kiểm tra nhãn đã lưu: ${result.result.risk_before.toFixed(1)} → ${result.result.risk_after.toFixed(1)} điểm.`;
+  } catch (err) { error(err.message); await updateClock(); }
+  finally { saving = false; actions(); renderQueue(); }
+});
 async function submit(verdict) {
-  if (saving || !selected) return;
+  if (saving || !selected || recheckPending) return;
   saving = true; actions(); renderQueue(); error("");
   try {
     const objIds = [...document.querySelectorAll("[data-obj-id]:checked")].map(el => el.value);
@@ -147,20 +191,24 @@ document.addEventListener("keydown", event => {
 $("settings-form").addEventListener("submit", async event => {
   event.preventDefault(); error("");
   try {
-    cfg = await worker({type: "SAVE_SETTINGS", settings: {apiUrl: $("api-url").value.trim(), reviewer: $("reviewer").value.trim(),
+    cfg = await worker({type: "SAVE_SETTINGS", settings: {apiUrl: $("api-url").value.trim(), guidelineUrl: $("guideline-url").value.trim(), reviewer: $("reviewer").value.trim(),
       batch: $("batch").value.trim(), sessionId: $("session").value.trim(), order: $("order").value}});
     selected = null; pending = null; $("selected").hidden = true; $("settings").open = false;
+    savedSnapshot = null; recheckPending = null;
     await loadQueue();
   } catch (err) { error(err.message); }
 });
 (async () => {
   try {
     cfg = await worker({type: "SETTINGS"});
-    $("api-url").value = cfg.apiUrl; $("reviewer").value = cfg.reviewer;
+    $("api-url").value = cfg.apiUrl; $("guideline-url").value = cfg.guidelineUrl; $("reviewer").value = cfg.reviewer;
     $("batch").value = cfg.batch; $("session").value = cfg.sessionId; $("order").value = cfg.order;
     $("settings").open = !cfg.reviewer;
     const clock = await worker({type: "CLOCK"});
-    if (clock.active) { pending = clock.pending; await showDetail(clock.detail); }
+    if (clock.active) {
+      pending = clock.pending; savedSnapshot = clock.savedSnapshot; recheckPending = clock.recheckPending;
+      await showDetail(clock.detail); showSaved();
+    }
     await loadQueue(); await updateClock(); setInterval(updateClock, 1000);
   } catch (err) { error(err.message); }
 })();

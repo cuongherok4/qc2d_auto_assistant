@@ -115,3 +115,10 @@ class ReviewStore:
                     "INSERT INTO state VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                     (key, json.dumps(value, allow_nan=False)),
                 )
+
+    def state_items(self, prefix: str) -> dict[str, dict]:
+        with self.connection() as db:
+            rows = db.execute(
+                "SELECT key, value FROM state WHERE substr(key, 1, ?) = ?", (len(prefix), prefix)
+            )
+            return {row["key"]: json.loads(row["value"]) for row in rows}

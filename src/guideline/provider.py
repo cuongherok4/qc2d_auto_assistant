@@ -23,6 +23,21 @@ merge.<class>, min_height_px.<class/default>, near_threshold_px, iou_loose, requ
 Không tạo rule thiếu citation. Luật nhìn ảnh đi vào visual_rules, không biến thành ngưỡng hình học.
 message tiếng Việt, hỗ trợ placeholder {category}, {obj_id}, {h:.0f}, {thr}, {attr}, {gid}.
 Không trả approved_by hoặc source; server điền provenance. id không dấu, version dạng 1.0.0.
+Trích đủ quy định BOUNDING BOX: class được phép, cách bao box, bỏ sót/trùng object,
+phản chiếu/billboard/bóng đổ, che khuất/cắt mép và xử lý trường hợp không chắc.
+Chỉ dùng các check trong schema. Quy định cần quan sát ảnh đi vào visual_rules với câu hỏi
+kiểm tra rõ ràng, kể cả khi không có ngưỡng số. Polygon/polyline không thuộc scope detection
+rectangle này: ghi phạm vi chưa hỗ trợ vào unclear, không tạo class area/lane.
+Mỗi page có text và tables (bảng → dòng → ô). quote phải là đoạn LIÊN TIẾP chép từ text
+hoặc một ô tables của đúng page. Dùng ô Class áp dụng của dòng Rectangle để dẫn classes;
+không nối các ô không liền nhau hoặc sửa ký tự. Chỉ chuẩn hoá khoảng trắng.
+Ý nghĩa check: class_not_allowed kiểm class ngoài danh sách; below_min_height chỉ dùng khi
+nguồn có ngưỡng số; missing_attribute chỉ kiểm thuộc tính bắt buộc cho mọi box;
+model_object_missing chỉ biểu diễn bỏ sót object cần annotate, đối chiếu detector ở downstream.
+Box vượt biên, box trùng hay lệch vị trí KHÔNG phải model_object_missing; chưa có check hình học
+tương ứng thì ghi unclear (unsupported_geometric_check), không gán sang check khác.
+Attribute chỉ bắt buộc có điều kiện không được biến thành bắt buộc cho tất cả box; nếu schema
+không diễn tả được điều kiện thì dùng visual_rules/unclear thay vì tự đặt required_attributes.
 """
 
 
@@ -36,7 +51,8 @@ def gemini(pages: list[dict], schema: dict, cfg: dict, *, client: httpx.Client |
         raise ProviderError("Model ID không hợp lệ")
     generation = {"maxOutputTokens": cfg["max_output_tokens"]}
     if cfg.get("schema_mode") == "responseFormat":
-        generation["responseFormat"] = {"text": {"mimeType": "application/json", "schema": schema}}
+        # generateContent REST uses a protobuf enum here, unlike responseMimeType.
+        generation["responseFormat"] = {"text": {"mimeType": "APPLICATION_JSON", "schema": schema}}
     else:
         generation.update(responseMimeType="application/json", responseJsonSchema=schema)
     if cfg.get("supports_temperature", True):

@@ -4,9 +4,11 @@
 <title>M13 Review</title><link rel="stylesheet" href="sidepanel.css"></head>
 <body>
 <header><h1>M13 · Review QC 2D</h1><button id="refresh">Tải lại</button></header>
+<button id="open-guideline" type="button">Mở guideline · đọc / sửa / duyệt</button>
 <details id="settings"><summary>Cài đặt</summary>
 <form id="settings-form">
 <label>API local <input id="api-url" required type="url" value="http://127.0.0.1:8000"></label>
+<label>Giao diện guideline <input id="guideline-url" required type="url" value="http://127.0.0.1:8010"></label>
 <label>Reviewer <input id="reviewer" required maxlength="100" autocomplete="name"></label>
 <label>Batch <input id="batch" placeholder="Để trống: queue hiện tại"></label>
 <label>Phiên review <input id="session" value="default" required maxlength="100"></label>
@@ -22,6 +24,9 @@
 <ul id="evidence"></ul>
 <p id="timer">Chưa bắt đầu</p>
 <p class="hint">Sửa và lưu nhãn trong CVAT trước khi ghi kết quả. Verdict lưu riêng, không thay thao tác lưu nhãn.</p>
+<div><button id="read-saved">Đọc nhãn đã Save</button><button id="recheck" disabled>Kiểm tra lại lỗi</button></div>
+<p id="saved-status" role="status">Điểm hiện tại thuộc lần chấm trước. Đọc nhãn đã Save để kiểm tra lại.</p>
+<ul id="saved-labels"></ul>
 <label class="note">Ghi chú (không bắt buộc)<textarea id="note" rows="2" maxlength="10000"></textarea></label>
 <div id="actions"><button data-verdict="error">1 · Lỗi thật</button><button data-verdict="false_alarm">2 · Bot nhầm</button><button data-verdict="skip">3 · Bỏ qua</button></div>
 <button id="retry" hidden>Thử gửi lại verdict</button>

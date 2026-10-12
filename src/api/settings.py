@@ -30,6 +30,10 @@ class Settings:
     server_port: int = 8000
     fixture_dir: str = "data/samples/review"
     retrain_backend: str | None = None
+    recheck_backend: str | None = None
+    snapshot_dir: str = "data/cvat-snapshots"
+    recheck_dir: str = "data/rechecks"
+    data_purpose: str = "development"
 
     @classmethod
     def configured(cls) -> Settings:
@@ -42,4 +46,7 @@ class Settings:
                 values[key] = config.ROOT / value
         if value := os.environ.get("M13_CVAT_URL"):
             values["cvat_url"] = value
+        for key in ("recheck_backend", "data_purpose", "snapshot_dir", "recheck_dir"):
+            if value := os.environ.get(f"M13_{key.upper()}"):
+                values[key] = value
         return cls(**values)

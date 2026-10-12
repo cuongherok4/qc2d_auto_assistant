@@ -32,12 +32,16 @@ def atomic_yaml(path: Path, spec: dict):
 def extract(file: Path, outdir: Path | None = None, *, options: dict | None = None, backend=None) -> Path:
     cfg = {**config.load("guideline_extract"), **(options or {})}
     cache = config.ROOT / cfg["cache_dir"]
-    document = read_document(file, cache)
+    document = read_document(
+        file, cache, text_options=cfg.get("pdf_text", {}), table_options=cfg.get("pdf_tables", {}),
+    )
     schema = ExtractedSpec.model_json_schema()
     identity = {
         "source": document["sha256"],
         "pdf": document["pdf_sha256"],
         "converter": document["converter"],
+        "pages": document["pages_sha256"],
+        "text_extractor": document["text_extractor"],
         "schema": schema,
         "prompt": PROMPT,
         "config": {
@@ -60,7 +64,9 @@ def extract(file: Path, outdir: Path | None = None, *, options: dict | None = No
     # Validation runs again on cache hits; invalid schema is never cached.
     if not cache_hit:
         response_path.parent.mkdir(parents=True, exist_ok=True)
-        response_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
+        from src.api.saved_labels import atomic_json
+
+        atomic_json(response_path, spec)
     for category in spec["classes"]:
         if "default" not in spec["min_height_px"] and category not in spec["min_height_px"]:
             missing = {"category": category, "field": "min_height_px", "note": "Nguồn chưa ghi ngưỡng"}
@@ -73,7 +79,12 @@ def extract(file: Path, outdir: Path | None = None, *, options: dict | None = No
         rule["severity"] = cfg["rule_severity"][rule["check"]]
     spec.update(
         approved_by="",
-        source={k: document[k] for k in ("file", "sha256", "pdf_file", "pdf_sha256", "converter")},
+        source={
+            k: document[k] for k in (
+                "file", "sha256", "pdf_file", "pdf_sha256", "converter",
+                "text_extractor", "text_options", "table_options", "pages_sha256",
+            )
+        },
         extraction={
             "provider": cfg["provider"],
             "model": cfg["model"],
@@ -88,8 +99,15 @@ def extract(file: Path, outdir: Path | None = None, *, options: dict | None = No
             "Extract chỉ ghi vào thư mục tên drafts; dùng guideline approve để xuất spec đã duyệt"
         )
     output = destination / f"{spec['id']}@{spec['version']}-{document['sha256'][:8]}.yaml"
-    if output.exists() and yaml.safe_load(output.read_text()).get("approved_by"):
-        raise ValueError("Không ghi đè spec đã có người duyệt")
+    if output.exists():
+        existing = yaml.safe_load(output.read_text())
+        if existing.get("approved_by"):
+            raise ValueError("Không ghi đè spec đã có người duyệt")
+        if existing.get("extraction", {}).get("draft_corrections"):
+            if existing["extraction"].get("cache_id") != cache_id:
+                raise ValueError("Draft có sửa tay; dùng thư mục drafts khác cho cấu hình trích mới")
+            validate_source(existing)
+            return output
     atomic_yaml(output, spec)
     return output
 
@@ -100,26 +118,38 @@ def load_approved(path: Path) -> dict:
         raise ApprovalError("Spec chưa có người duyệt thực sự")
     if spec.get("extraction", {}).get("quote_problems"):
         raise ApprovalError("Spec còn quote không kiểm chứng được")
+    validate_source(spec)
     return spec
 
 
-def approve(draft: Path, reviewer: str, *, acknowledged: bool, outdir: Path | None = None) -> Path:
-    if not acknowledged or not reviewer.strip():
-        raise ApprovalError("Người duyệt phải đọc PDF/spec và xác nhận --confirm-reviewed")
-    spec = yaml.safe_load(draft.read_text(encoding="utf-8"))
+def validate_source(spec: dict):
+    """Revalidate approved content, not just an editable approved_by field."""
     source = spec.get("source", {})
     file = Path(source.get("file", ""))
     if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest() != source.get("sha256"):
         raise ApprovalError("Nguồn đã đổi/không còn; trích lại trước khi duyệt")
-    document = read_document(file, config.ROOT / config.load("guideline_extract")["cache_dir"])
+    document = read_document(
+        file, config.ROOT / config.load("guideline_extract")["cache_dir"],
+        text_options=source.get("text_options", {}),
+        table_options=source.get("table_options", {}),
+    )
     if document["pdf_sha256"] != source.get("pdf_sha256"):
         raise ApprovalError("Bản PDF kiểm chứng đã đổi; trích lại")
+    if source.get("pages_sha256") and document["pages_sha256"] != source["pages_sha256"]:
+        raise ApprovalError("Văn bản kiểm chứng đã đổi; trích lại")
     raw = {k: spec[k] for k in ExtractedSpec.model_fields if k in spec}
     raw["rules"] = [{k: v for k, v in rule.items() if k != "severity"} for rule in raw.get("rules", [])]
     ExtractedSpec.model_validate(raw)
     problems = quote_problems(raw, document["pages"])
     if problems:
         raise ApprovalError(f"Không duyệt được: quote không tồn tại trong nguồn: {problems}")
+
+
+def approve(draft: Path, reviewer: str, *, acknowledged: bool, outdir: Path | None = None) -> Path:
+    if not acknowledged or not reviewer.strip():
+        raise ApprovalError("Người duyệt phải đọc PDF/spec và xác nhận --confirm-reviewed")
+    spec = yaml.safe_load(draft.read_text(encoding="utf-8"))
+    validate_source(spec)
     spec["extraction"]["quote_problems"] = []
     spec["approved_by"] = reviewer.strip()
     destination = outdir or config.ROOT / config.load("guideline_extract")["approved_dir"]
