@@ -1,9 +1,15 @@
 # GBM và vòng học lại (Mốc 3).
+# Chọn trên val 13/10 (train 6k ảnh, ~15% có lỗi): binary, num_leaves 7/15/31 và regression gần bằng nhau
+# (val 0.40-0.43); giữ binary để risk_score = xác suất có lỗi.
 gbm:
-  num_leaves: 31
+  num_leaves: 15
   learning_rate: 0.05
   n_estimators: 500
   early_stopping_rounds: 50
+  min_data_in_leaf: 40
+  bagging_fraction: 0.8
+  bagging_freq: 1
+  feature_fraction: 0.8
   seed: 42
 retrain:
   batch_size: 200            # học lại sau mỗi 200 verdict, không học online

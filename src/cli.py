@@ -60,6 +60,32 @@ def cmd_rank(args) -> int:
     return 0
 
 
+def cmd_train_gbm(args) -> int:
+    from src import pipeline
+    from src.data import bdd100k
+    from src.scoring.gbm import Scorer
+
+    labels = args.labels or config.path("injected_dir") / "det_val_injected.json"
+    answer_file = args.answer or config.path("injected_dir") / "injected_errors.json"
+    options = config.load("pipeline")
+    names = options["signals"]
+    weights = {n: 1.0 for n in [*names, "model_missing_label", "model_class_conflict", "model_loose_box",
+                                "label_unsupported"]}  # GBM tự học trọng số; ở đây chỉ để giữ mọi tín hiệu
+    manifest = pipeline.publish(
+        bdd100k.read_frames(labels), args.out or config.path("reports_dir"), args.version,
+        names=names, weights=weights, options=options, preds_file=args.preds,
+        scorer=Scorer(json.loads(Path(answer_file).read_text(encoding="utf-8"))),
+        provenance={"kind": "cli_train_gbm", "labels_file": pipeline.portable(labels),
+                    "labels_sha256": pipeline.sha256(labels), "answer_file": pipeline.portable(answer_file)},
+    )
+    info = manifest["scorer"]
+    top = ", ".join(f"{k}" for k in list(info["importance"])[:5])
+    print(f"GBM {info['best_iteration']} cây, recall20 có trọng số trên val {info['val_recall20_weighted']}"
+          f"\nđặc trưng quan trọng nhất: {top}\nqueue -> {manifest['queue_file']}"
+          f"\nmodel -> {info['model_file']}")
+    return 0
+
+
 def cmd_evaluate(args) -> int:
     from src.eval import evaluate
 
@@ -369,6 +395,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--spec", type=Path, help="spec guideline ĐÃ DUYỆT; bật tín hiệu guideline")
     p.add_argument("--out", type=Path, help="mặc định: reports/")
     p.set_defaults(fn=cmd_rank)
+
+    p = sub.add_parser("train-gbm", help="học GBM từ đáp án (train, early stop val) -> queue gbm")
+    p.add_argument("--labels", type=Path, help="mặc định: nhãn đã tiêm lỗi")
+    p.add_argument("--answer", type=Path, help="mặc định: data/injected/injected_errors.json")
+    p.add_argument("--preds", type=Path, help="yolo_preds.parquet; nên có, GBM dùng tín hiệu detector")
+    p.add_argument("--version", required=True, help="vd. gbm-v1")
+    p.add_argument("--out", type=Path, help="mặc định: reports/")
+    p.set_defaults(fn=cmd_train_gbm)
 
     p = sub.add_parser("evaluate", help="đo hàng đợi vs file order/random, gain curve, ghi results.jsonl")
     p.add_argument("--queue", type=Path, required=True)

@@ -20,9 +20,13 @@ Long      ████░░░░░░░░░░░░░░░░   2/9   2
 | Theo thứ tự file | — | 0.228 |
 | rule-v0.1 | 8 tín hiệu hình học | 0.200 |
 | rule-v1 | 12 tín hiệu | 0.276 |
-| **rule-v1.2** | **4 tín hiệu detector** | **0.348** |
+| **rule-v1.2** ← **hàng đợi chính (Cường chốt 13/10)** | **4 tín hiệu detector** | **0.348** |
+| gbm-v1 (mở rộng) | 12 tín hiệu + 8 đặc trưng phụ, LightGBM tự học trọng số | 0.367 |
 
-Bộ tín hiệu chọn trên tập val; tập test chỉ dùng để đo. Đây là lỗi tiêm, chưa phải lỗi thật; số cuối cùng phải lấy từ kiểm tay 150 ảnh.
+Bộ tín hiệu và cấu hình GBM chọn trên tập val; tập test chỉ dùng để đo. GBM hơn rule-v1.2 một chút
+(0.367 so với 0.348, nhỏ hơn độ dao động ±0.024 của random) nên **demo vẫn dùng rule-v1.2**: GBM cần đáp án
+để học, khi chạy thật phải học từ verdict của reviewer, và nút kiểm tra lại hiện chỉ hỗ trợ rule.
+GBM đưa vào bảng so sánh 5 phương pháp của báo cáo. Đây là lỗi tiêm, chưa phải lỗi thật; số cuối cùng phải lấy từ kiểm tay 150 ảnh.
 
 ## Từng người
 
@@ -40,6 +44,7 @@ Bộ tín hiệu chọn trên tập val; tập test chỉ dùng để đo. Đây
 - [x] Danh sách 150 ảnh kiểm tay (`manual-sample`)
 - [ ] Merge PR `feat/cuong-detector-signals`, chia dữ liệu qua Drive
 - [ ] Tổng hợp số liệu cuối sau khi có kiểm tay và pilot (trước 15/10 20:00)
+- [x] *(mở rộng, không tính %)* GBM `gbm-v1`: `python -m src.cli train-gbm --version gbm-v1 --preds data/yolo_preds.parquet`
 
 ### Tú Anh · review & pilot — 5/8
 
