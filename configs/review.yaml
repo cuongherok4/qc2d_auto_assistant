@@ -1,0 +1,19 @@
+# Chính sách của luồng Tú Anh theo M13_DE_XUAT; không thay learning.yaml của nhóm.
+audit_every: 10
+audit_seed: 42
+retrain_after: 50
+max_recall_drop: 0.005
+rank_buckets: [0.2, 0.5, 1.0]
+allowed_origins: []
+server_host: 127.0.0.1
+server_port: 8000
+fixture_dir: data/samples/review
+queue_file: null
+queue_batches: # Optional local batches; their input files stay outside Git.
+  bdd01: data/bdd01-manual/ranked_queue_manual-unscored-v1.csv
+evidence_file: null
+retrain_backend: null # module:function; adapter nhận manifest split và metrics val từ backend ML
+recheck_backend: null # module:function; chỉ gọi sau khi đọc nhãn đã Save từ CVAT
+snapshot_dir: data/cvat-snapshots
+recheck_dir: data/rechecks
+data_purpose: development # Chỉ đặt real khi dùng dữ liệu thật đã xác minh; pilot kiểm trường này.

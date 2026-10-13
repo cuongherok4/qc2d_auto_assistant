@@ -1,0 +1,29 @@
+# Demo local: giảm RAM, giới hạn cổng ngoài. Không thay compose nguồn của CVAT.
+services:
+  traefik:
+    ports: !override
+      - "127.0.0.1:8080:8080"
+  cvat_server:
+    environment:
+      NUMPROCS: 1
+  cvat_worker_import:
+    environment:
+      NUMPROCS: 1
+  cvat_worker_export:
+    environment:
+      NUMPROCS: 1
+  cvat_worker_annotation:
+    environment:
+      NUMPROCS: 1
+  cvat_worker_webhooks:
+    environment:
+      NUMPROCS: 1
+  cvat_worker_quality_reports:
+    environment:
+      NUMPROCS: 1
+  cvat_worker_chunks:
+    environment:
+      NUMPROCS: 1
+  cvat_worker_consensus:
+    environment:
+      NUMPROCS: 1

@@ -1,0 +1,135 @@
+[
+  {
+    "id": "fixture-guideline-1",
+    "paragraphs": [
+      "FIXTURE DEVELOPMENT ONLY — không dùng để nghiệm thu.",
+      "Allowed classes: car, truck.",
+      "Do not label cars shorter than 15 pixels."
+    ],
+    "response": {
+      "id": "fixture-guideline-1",
+      "version": "1.0.0",
+      "classes": [
+        "car",
+        "truck"
+      ],
+      "merge": {},
+      "min_height_px": {
+        "car": 15
+      },
+      "required_attributes": [],
+      "rules": [
+        {
+          "id": "R1",
+          "check": "below_min_height",
+          "page": 1,
+          "quote": "Do not label cars shorter than 15 pixels.",
+          "message": "Box {category} cao {h:.0f}px, dưới ngưỡng {thr}px (tr.1)"
+        }
+      ],
+      "visual_rules": [],
+      "unclear": [],
+      "facts": [
+        {
+          "field": "classes",
+          "page": 1,
+          "quote": "Allowed classes: car, truck."
+        },
+        {
+          "field": "min_height_px.car",
+          "page": 1,
+          "quote": "Do not label cars shorter than 15 pixels."
+        }
+      ]
+    }
+  },
+  {
+    "id": "fixture-guideline-2",
+    "paragraphs": [
+      "FIXTURE DEVELOPMENT ONLY — không dùng để nghiệm thu.",
+      "Allowed classes: car, truck.",
+      "Do not label cars shorter than 30 pixels.",
+      "Label buses as trucks."
+    ],
+    "response": {
+      "id": "fixture-guideline-2",
+      "version": "1.0.0",
+      "classes": [
+        "car",
+        "truck"
+      ],
+      "merge": {
+        "bus": "truck"
+      },
+      "min_height_px": {
+        "car": 30
+      },
+      "required_attributes": [],
+      "rules": [
+        {
+          "id": "R1",
+          "check": "below_min_height",
+          "page": 1,
+          "quote": "Do not label cars shorter than 30 pixels.",
+          "message": "Box {category} cao {h:.0f}px, dưới ngưỡng {thr}px (tr.1)"
+        }
+      ],
+      "visual_rules": [],
+      "unclear": [],
+      "facts": [
+        {
+          "field": "classes",
+          "page": 1,
+          "quote": "Allowed classes: car, truck."
+        },
+        {
+          "field": "min_height_px.car",
+          "page": 1,
+          "quote": "Do not label cars shorter than 30 pixels."
+        },
+        {
+          "field": "merge.bus",
+          "page": 1,
+          "quote": "Label buses as trucks."
+        }
+      ]
+    }
+  },
+  {
+    "id": "fixture-guideline-3",
+    "paragraphs": [
+      "FIXTURE DEVELOPMENT ONLY — không dùng để nghiệm thu.",
+      "Allowed classes: car, truck.",
+      "Check that traffic signs are readable before labeling."
+    ],
+    "response": {
+      "id": "fixture-guideline-3",
+      "version": "1.0.0",
+      "classes": [
+        "car",
+        "truck"
+      ],
+      "merge": {},
+      "min_height_px": {},
+      "required_attributes": [],
+      "rules": [],
+      "visual_rules": [
+        {
+          "id": "V1",
+          "category": "traffic sign",
+          "page": 1,
+          "quote": "Check that traffic signs are readable before labeling.",
+          "question": "Biển giao thông trong box có đọc được không?"
+        }
+      ],
+      "unclear": [],
+      "facts": [
+        {
+          "field": "classes",
+          "page": 1,
+          "quote": "Allowed classes: car, truck."
+        }
+      ]
+    }
+  }
+]

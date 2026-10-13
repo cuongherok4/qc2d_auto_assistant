@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Duyệt guideline · M13</title><link rel="stylesheet" href="/editor.css"></head>
+<body><header><h1>Duyệt guideline</h1><p>Đối chiếu từng luật với PDF nguồn trước khi duyệt. Lưu chỉnh sửa luôn tạo bản nháp mới.</p></header>
+<main><label>Bản luật <select id="drafts"></select></label><button id="refresh">Tải lại danh sách</button>
+<p id="status" role="status"></p><p id="error" role="alert"></p>
+<section id="content" hidden><h2 id="title"></h2><p id="approval-status"></p>
+<button id="pdf">Mở PDF nguồn để đối chiếu</button><p id="source"></p>
+<label>Class được phép <input id="classes" placeholder="Các class, ngăn cách bằng dấu phẩy"></label>
+<label>Thuộc tính bắt buộc <input id="attributes" placeholder="Để trống nếu nguồn không quy định"></label>
+<label>Khoảng sát ngưỡng (px) <input id="near" type="number" min="0" step="any"></label>
+<label>IoU theo nguồn <input id="iou" type="number" min="0" max="1" step="any"></label>
+<div id="tables"></div>
+<details><summary>Nguồn và lịch sử chỉnh sửa</summary><pre id="history"></pre></details>
+<div class="actions"><label>Tên người chỉnh sửa / duyệt <input id="reviewer" maxlength="100" autocomplete="name"></label>
+<button id="save">Lưu thành bản nháp mới</button>
+<label class="confirmation"><input id="confirmed" type="checkbox"> Tôi đã đối chiếu nội dung với PDF nguồn và chịu trách nhiệm duyệt bản đang hiển thị.</label>
+<button id="approve">Duyệt bản đã lưu</button>
+<p id="action-feedback" role="status" aria-live="polite"></p>
+<p id="action-error" role="alert"></p></div>
+</section></main><script src="/editor.js"></script></body></html>

@@ -1,0 +1,7 @@
+version: v2.74.1
+source_dir: deployment/cvat/upstream
+project: m13_demo
+port: 8082
+host: localhost
+min_available_memory_gib: 4 # Local safety margin for a second stack, not an official CVAT minimum.
+min_free_disk_gib: 12
