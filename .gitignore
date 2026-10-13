@@ -21,6 +21,10 @@ __pycache__/
 
 # Kết quả sinh ra khi chạy (results.jsonl và báo cáo tuần vẫn commit)
 reports/ranked_queue_*.csv
+reports/ranked_queue_*.manifest.json
+reports/evidence_*.jsonl
+reports/labels_*.json
+reports/eval_*/
 reports/viz/
 *.egg-info/
 .pytest_cache/
