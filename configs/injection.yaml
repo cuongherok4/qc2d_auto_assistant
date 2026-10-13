@@ -18,3 +18,7 @@ confusable_pairs:
   - [traffic light, traffic sign]
 shift_iou_range: [0.4, 0.7]
 min_box_side_px: 2
+sampling: realistic       # uniform để đo đối chứng không ưu tiên vật nhỏ/che khuất
+missing_bias: {small_height_px: 30, small_weight: 2.0, occluded_weight: 2.0}
+max_attempts: 100
+spurious_max_iou: 0.1

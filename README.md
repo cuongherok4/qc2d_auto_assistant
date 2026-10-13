@@ -6,6 +6,12 @@ Trợ lý ưu tiên review nhãn detection 2D trên BDD100K. Thay vì QC review 
 - **Chỉ số chính:** recall lỗi trong top 20% ảnh; thời gian review tiết kiệm
 - **Nhóm:** Hoàng Mạnh Cường (lead), Long (BA), Tú Anh (BE), Sơn (BE)
 
+**Dành cho cả người không chuyên kỹ thuật:** [Hướng dẫn 10 việc cần làm: ai làm, làm thế nào, giao gì và khi nào tính là xong](docs/huong-dan-cong-viec-de-hieu.md).
+
+**Cập nhật 13/10:** [Phân tích đề tài, hiện trạng các nhánh và phân công tiếp theo](docs/phan-tich-va-phan-cong-13-10.md) — gồm 4 sơ đồ SVG để chia sẻ với nhóm; ghi nhận phần API, CVAT, extension và guideline tools Tú Anh đã viết.
+
+**Xem hệ thống qua một ví dụ cụ thể:** [Ảnh + guideline → LLM trích luật → detector/rule kiểm nhãn → hàng đợi review](docs/vi-du-xuyen-suot.md), có hai hình minh họa đầu vào và kết quả từng bước.
+
 ## Bắt đầu
 
 ```bash
@@ -21,8 +27,8 @@ Thành viên mới: đọc [CONTRIBUTING.md](CONTRIBUTING.md) để biết luồ
 ```bash
 python -m src.cli load                                    # 1. đọc nhãn BDD100K
 python -m src.cli inject                                  # 2. tiêm lỗi có đáp án
-python -m src.cli rank --version rule-v0                  # 3–4. tín hiệu + chấm điểm -> reports/ranked_queue_rule-v0.csv
-python -m src.cli evaluate --queue reports/ranked_queue_rule-v0.csv   # 7. recall@20%, time saved
+python -m src.cli rank --version rule-v0                  # 3–4. queue + evidence + manifest (thêm --preds/--spec khi có)
+python -m src.cli evaluate --queue reports/ranked_queue_rule-v0.csv   # 7. so file order/random, gain curve
 uvicorn src.api.main:app --reload                         # 5. API cho giao diện review
 ```
 

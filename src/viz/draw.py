@@ -10,4 +10,4 @@ from pathlib import Path
 
 
 def draw_image(image_id: str, objects, preds=None, evidence=None, out_dir: Path | None = None) -> Path:
-    raise NotImplementedError("TODO(Sơn): vẽ box bằng PIL.ImageDraw")
+    raise NotImplementedError("TODO(Tú Anh): vẽ box bằng PIL.ImageDraw")

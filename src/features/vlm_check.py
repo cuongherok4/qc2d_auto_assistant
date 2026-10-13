@@ -9,4 +9,4 @@ from __future__ import annotations
 
 
 def vlm_check(objects, images, spec: dict, top_ids: list[str]):
-    raise NotImplementedError("TODO(Sơn): hỏi VLM local (Qwen2.5-VL) theo visual_rules")
+    raise NotImplementedError("TODO(Cường): hỏi VLM local (Qwen2.5-VL) theo visual_rules")

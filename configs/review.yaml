@@ -13,7 +13,7 @@ queue_batches: # Optional local batches; their input files stay outside Git.
   bdd01: data/bdd01-manual/ranked_queue_manual-unscored-v1.csv
 evidence_file: null
 retrain_backend: null # module:function; adapter nhận manifest split và metrics val từ backend ML
-recheck_backend: null # module:function; chỉ gọi sau khi đọc nhãn đã Save từ CVAT
+recheck_backend: src.pipeline:recheck # chấm lại rule từ nhãn đã Save; queue phải có .manifest.json (sinh bằng `rank`)
 snapshot_dir: data/cvat-snapshots
 recheck_dir: data/rechecks
 data_purpose: development # Chỉ đặt real khi dùng dữ liệu thật đã xác minh; pilot kiểm trường này.
