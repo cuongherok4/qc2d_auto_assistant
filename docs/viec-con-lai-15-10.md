@@ -48,6 +48,8 @@ Chi tiết ở [tien-do.md](tien-do.md).
 
 ## Tú Anh · review & pilot
 
+Hướng dẫn chi tiết: [huong-dan-tuanh-15-10.html](huong-dan-tuanh-15-10.html).
+
 **Lượt 1 (trước 12:30)**
 
 1. **Chạy hàng đợi `rule-v1.2` trên máy mình qua CVAT và extension**:
@@ -69,15 +71,19 @@ Chi tiết ở [tien-do.md](tien-do.md).
 
 ## Long · guideline & chất lượng
 
+Hướng dẫn chi tiết: [huong-dan-long-15-10.html](huong-dan-long-15-10.html).
+
 **Lượt 1 (trước 12:30)**
 
 1. **R2 và R3** trong `src/features/guideline_rules.py`, đăng ký bằng `@check("class_not_allowed")` và
    `@check("missing_attribute")` giống R1. Spec `configs/guidelines/bdd-default.yaml` đã khai báo sẵn 2 rule này.
    - R2: box có `category` không nằm trong `classes` của spec.
-   - R3: box thiếu một trong `required_attributes` (`occluded`, `truncated`).
+   - R3: box thiếu một trong `required_attributes` (`occluded`, `truncated`). Hàm đọc nhãn hiện điền `False` khi thiếu
+     thuộc tính, nên phải thêm cột `has_occluded`, `has_truncated` trong `src/data/bdd100k.py` (không đổi cột cũ).
    - Mỗi rule có test cho ca vi phạm và ca không vi phạm.
-   - Lưu ý: trên nhãn 2018, 185526/185526 box đều có đủ 2 thuộc tính, nên R3 chỉ bắt được lỗi tiêm hoặc nhãn từ CVAT.
-     Ghi điều này trong PR, đừng coi là lỗi code.
+   - Lưu ý: trên nhãn 2018, cả 185526 box đều có đủ 2 thuộc tính, và lệnh tiêm lỗi không tạo lỗi thiếu thuộc tính hay
+     lỗi class ngoài danh sách. Vì vậy R2 và R3 không làm tăng số đo trên lỗi tiêm. Ghi điều này trong PR, đừng coi là
+     lỗi code.
 2. **Phiếu kiểm tay** cho 150 ảnh trong `data/manual_check/manual-check-v1.csv`:
    - Mỗi ảnh ghi: có lỗi / không lỗi / không chắc, loại lỗi, ghi chú.
    - Gửi nhóm trước 12:30 để Sơn kiểm được trong buổi chiều.
@@ -85,9 +91,9 @@ Chi tiết ở [tien-do.md](tien-do.md).
 
 **Lượt 2 (chiều)**
 
-4. **Duyệt spec**:
-   - Đọc lại `bdd-default.yaml` so với guideline BDD100K, sửa nếu sai.
-   - Duyệt bằng `python -m src.cli guideline approve configs/guidelines/bdd-default.yaml --approved-by "Long" --confirm-reviewed`.
+4. **Spec đã duyệt**: `rank --spec` chỉ nhận spec có tài liệu nguồn đã kiểm, nên không duyệt thẳng `bdd-default.yaml`
+   được. Cần viết guideline DOCX, rồi chạy `guideline extract` (cần Gemini key, Tú Anh hỗ trợ), sửa bằng `guideline ui`,
+   sau đó `guideline approve`.
    - Chạy thử `python -m src.cli rank --version rule-v1.4-spec --spec <spec đã duyệt> --preds data/yolo_preds.parquet --signals` và `evaluate`.
      Ghi số vào PR.
 5. **Kiểm tay 150 ảnh**, độc lập với Sơn. Xong cả hai mới đối chiếu: tính kappa trên có lỗi/không lỗi, để riêng các ảnh
