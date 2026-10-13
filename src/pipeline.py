@@ -91,7 +91,10 @@ def compute(frames, *, names, weights, options, preds=None, spec=None):
 
 
 def publish(frames, output_dir, version, *, names=None, weights=None, options=None, preds_file=None,
-            spec=None, provenance=None):
+            spec=None, provenance=None, scorer=None):
+    """scorer=None: chấm bằng rule.
+    Nếu có: scorer(signals, features, frames, preds, version) -> (queue, info),
+    info["method"] ghi vào manifest (vd. src.scoring.gbm.Scorer)."""
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,100}", version):
         raise ValueError("version chỉ gồm chữ, số, dấu chấm/gạch")
     options = copy.deepcopy(options if options is not None else config.load("pipeline"))
@@ -100,7 +103,13 @@ def publish(frames, output_dir, version, *, names=None, weights=None, options=No
     preds = pd.read_parquet(preds_file) if preds_file else None
     signals, features, images = compute(frames, names=names, weights=weights, options=options,
                                          preds=preds, spec=spec)
-    queue = rule.rank(signals, weights, version, config.load("weights").get("top_reasons", 3))
+    if scorer is None:
+        queue, info = rule.rank(signals, weights, version, config.load("weights").get("top_reasons", 3)), {}
+    else:
+        queue, info = scorer(signals, features, frames, preds, version)
+        errors = contracts.check_queue(queue)
+        if errors or set(queue.image_id) != set(images.image_id):
+            raise ValueError(f"Scorer trả queue không hợp lệ: {errors}")
     output = Path(output_dir).resolve()
     paths = {"queue_file": output/f"ranked_queue_{version}.csv",
              "evidence_file": output/f"evidence_{version}.jsonl",
@@ -114,7 +123,8 @@ def publish(frames, output_dir, version, *, names=None, weights=None, options=No
     write_json(paths["labels_file"], frames)
     features.to_parquet(paths["features_file"])
     queue_bytes = queue.to_csv(index=False).encode()
-    manifest = {"schema_version": 1, "model_version": version, "method": "rule",
+    manifest = {"schema_version": 1, "model_version": version, "method": info.get("method", "rule"),
+                "scorer": info,
                 "queue_sha256": hashlib.sha256(queue_bytes).hexdigest(),
                 "labels_sha256": sha256(paths["labels_file"]),
                 "features_sha256": sha256(paths["features_file"]),
