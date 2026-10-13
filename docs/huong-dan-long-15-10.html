@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hướng dẫn Long 15/10</title>
+<style>
+:root {
+  --bg: #fafaf8; --fg: #1d1d1b; --muted: #66665f; --line: #e2e1db; --card: #ffffff;
+  --code-bg: #f1f0ea; --accent: #2457c5; --ok: #1f7a3d; --warn: #a15c00; --bad: #b42318;
+  --warn-bg: #fff6e5; --bad-bg: #fdecea; --ok-bg: #e9f6ee;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161615; --fg: #ecebe6; --muted: #a3a29b; --line: #34332f; --card: #1f1f1d;
+    --code-bg: #2a2a27; --accent: #7aa2ff; --ok: #6fcf8f; --warn: #f0b45a; --bad: #ff8a80;
+    --warn-bg: #2e2516; --bad-bg: #2f1a18; --ok-bg: #16281d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161615; --fg: #ecebe6; --muted: #a3a29b; --line: #34332f; --card: #1f1f1d;
+  --code-bg: #2a2a27; --accent: #7aa2ff; --ok: #6fcf8f; --warn: #f0b45a; --bad: #ff8a80;
+  --warn-bg: #2e2516; --bad-bg: #2f1a18; --ok-bg: #16281d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 820px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 1.7rem; margin: 0 0 4px; }
+h2 { font-size: 1.2rem; margin: 0 0 8px; display: flex; gap: 10px; align-items: baseline; }
+.sub { color: var(--muted); margin: 0 0 24px; }
+.num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--bg);
+  display: inline-grid; place-items: center; font-size: .9rem; font-weight: 600; transform: translateY(-2px); }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin: 14px 0; }
+p { margin: 8px 0; }
+ul, ol { margin: 8px 0; padding-left: 22px; }
+li { margin: 3px 0; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.cmd { position: relative; margin: 10px 0; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; margin: 0; overflow-x: auto;
+  font: .88rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.copy { position: absolute; top: 6px; right: 6px; border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  border-radius: 6px; font-size: .78rem; padding: 3px 8px; cursor: pointer; }
+.copy:hover { color: var(--fg); }
+.note { border-radius: 8px; padding: 10px 14px; margin: 10px 0; }
+.note.warn { background: var(--warn-bg); border-left: 3px solid var(--warn); }
+.note.bad { background: var(--bad-bg); border-left: 3px solid var(--bad); }
+.note.ok { background: var(--ok-bg); border-left: 3px solid var(--ok); }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; margin: 8px 0; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.tbl { overflow-x: auto; }
+label.chk { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; cursor: pointer; }
+label.chk input { margin-top: 5px; }
+.tag { font-size: .78rem; color: var(--muted); font-weight: 400; }
+</style>
+</head>
+<body>
+<main>
+<h1>Việc của Long · 15/10</h1>
+<p class="sub">Viết luật R2 và R3, làm phiếu kiểm tay, chốt cách lấy mẫu audit, đưa một spec đã duyệt chạy qua <code>rank</code>, kiểm tay 150 ảnh, làm khung báo cáo. <b>Lượt 1 mở PR trước 12:30</b>, lượt 2 nộp trước buổi review tối.</p>
+
+<section>
+<h2>Nhóm đã đổi sang nhãn BDD100K bản 2018</h2>
+<p>Từ 14/10, nhóm dùng nhãn gốc bản 2018 lấy từ Drive của Sơn, thay cho det_20. Tôi đã tiêm lỗi lại và chạy lại toàn bộ hàng đợi, đã merge vào <code>develop</code>. Kết quả trên 2000 ảnh test (phần lỗi bắt được khi chỉ review 20% ảnh đầu):</p>
+<div class="tbl"><table>
+<tr><th>Hàng đợi</th><th>Kết quả</th></tr>
+<tr><td>Ngẫu nhiên</td><td>0.205 ± 0.024</td></tr>
+<tr><td><code>rule-v1.2</code> (hàng đợi demo)</td><td>0.310</td></tr>
+<tr><td><code>gbm-v1</code></td><td>0.390</td></tr>
+</table></div>
+<p>Toàn bộ số liệu nằm trong <code>reports/results.jsonl</code>. Báo cáo chỉ lấy số từ file này.</p>
+</section>
+
+<section>
+<h2><span class="num">1</span> Lấy code và dữ liệu</h2>
+<div class="cmd"><pre>git fetch
+git checkout -b feat/long-r2-r3 origin/develop
+uv pip install -e ".[dev]"</pre></div>
+<p>Tải <a href="https://drive.google.com/drive/folders/1JHSxrLOmYw1VAhiSNd4Ns-5T3iTMOiyQ"><code>m13-data-2018-14-10.zip</code></a> (38MB), giải nén ở thư mục gốc repo:</p>
+<div class="cmd"><pre>unzip -o m13-data-2018-14-10.zip
+rm -rf data/cache
+sha256sum data/bdd100k/labels/det_20/det_val.json
+# phải ra: f7cde1a3bc064b2cbd2ffbcf58b29889e7396f4a4176fd17e3d93e08dfb4ff00</pre></div>
+<div class="note bad">Checksum ra khác thì <b>dừng lại</b> và báo tôi.</div>
+</section>
+
+<section>
+<h2><span class="num">2</span> Luật R2 và R3 <span class="tag">lượt 1</span></h2>
+<p>Viết trong <code>src/features/guideline_rules.py</code>, cùng cách với R1 (<code>below_min_height</code>): đăng ký bằng decorator <code>@check(...)</code>, nhận <code>(objects, spec, rule)</code> và trả về danh sách vi phạm có <code>image_id, obj_id, box, severity, reason</code>. Spec <code>configs/guidelines/bdd-default.yaml</code> đã khai báo sẵn cả hai rule và câu thông báo.</p>
+<div class="tbl"><table>
+<tr><th>Luật</th><th>Tên check</th><th>Bắt khi</th><th>Message có sẵn</th></tr>
+<tr><td>R2</td><td><code>class_not_allowed</code></td><td><code>category</code> không nằm trong <code>spec["classes"]</code> (kiểm sau <code>apply_merge</code>)</td><td><code>{category}</code>, <code>{gid}</code></td></tr>
+<tr><td>R3</td><td><code>missing_attribute</code></td><td>box thiếu một thuộc tính trong <code>spec["required_attributes"]</code></td><td><code>{category}</code>, <code>{obj_id}</code>, <code>{attr}</code></td></tr>
+</table></div>
+
+<div class="note bad"><b>R3 phải sửa thêm hàm đọc nhãn.</b> <code>src/data/bdd100k.py</code> (khoảng dòng 50) đang ghi <code>bool(la.get("occluded", False))</code>, nghĩa là box thiếu thuộc tính sẽ bị điền thành <code>False</code>. Khi đó R3 không phân biệt được "thiếu" với "không bị che".
+<br>Cách tôi đề xuất: <b>thêm cột mới</b>, đừng đổi kiểu cột cũ. Cụ thể là thêm <code>has_occluded</code> và <code>has_truncated</code> kiểu bool, bằng <code>"occluded" in la</code>, rồi cho R3 đọc hai cột này. Cột <code>occluded</code> và <code>truncated</code> giữ nguyên, vì <code>edge_no_trunc</code> và <code>label_unsupported</code> đang dùng chúng. Thêm cột xong thì xoá <code>data/cache/</code> để cache sinh lại.</div>
+
+<p>Test viết trong <code>tests/test_guideline_rules.py</code>, dùng lại hàm <code>tables()</code> có sẵn. Mỗi luật cần ít nhất:</p>
+<ul>
+  <li>Ca vi phạm: <code>value</code> bằng severity và <code>reason</code> bắt đầu bằng <code>[R2]</code> hoặc <code>[R3]</code>.</li>
+  <li>Ca không vi phạm: <code>value == 0</code>.</li>
+  <li>R2: class bị đổi tên qua <code>merge</code> của spec thì kiểm theo tên mới.</li>
+  <li>R3: box có đủ thuộc tính nhưng giá trị là <code>false</code> thì <b>không</b> tính là thiếu.</li>
+</ul>
+
+<div class="note warn"><b>Cần biết để ghi đúng trong PR và báo cáo:</b>
+<ul>
+  <li>Trên nhãn 2018, cả 185526 box đều có đủ <code>occluded</code> và <code>truncated</code>. Vì vậy R3 không bắt được gì trên nhãn gốc.</li>
+  <li>Lệnh tiêm lỗi cũng không tạo lỗi thiếu thuộc tính. Lỗi đổi class thì đổi sang một class khác vẫn nằm trong danh sách, nên R2 cũng không bắt được.</li>
+  <li>Do đó R2 và R3 <b>sẽ không làm tăng số đo trên lỗi tiêm</b>. Đó là đúng, không phải lỗi code. Hai luật này có ích với nhãn sửa trong CVAT và với guideline có danh sách class khác (ví dụ guideline bỏ class <code>train</code>).</li>
+</ul></div>
+<div class="cmd"><pre>pytest -q tests/test_guideline_rules.py
+pytest -q
+ruff check .</pre></div>
+</section>
+
+<section>
+<h2><span class="num">3</span> Phiếu kiểm tay <span class="tag">lượt 1, gửi nhóm trước 12:30</span></h2>
+<p>Sơn sẽ kiểm tay trong buổi chiều nên cần phiếu trước 12:30. Danh sách là 150 ảnh trong <code>data/manual_check/manual-check-v1.csv</code> (75 ảnh ngẫu nhiên và 75 ảnh đầu hàng đợi, đã trộn thứ tự). Ảnh được chấm trên <b>nhãn gốc</b>, không phải nhãn đã tiêm lỗi.</p>
+<p>Gợi ý các cột của phiếu (một file CSV mỗi người):</p>
+<div class="cmd"><pre>image_id,ket_luan,loai_loi,so_box_loi,ghi_chu
+# ket_luan: loi | khong_loi | khong_chac
+# loai_loi: thieu_box | sai_class | box_lech | box_thua | thieu_thuoc_tinh | khac (nhiều loại thì cách nhau bằng ;)</pre></div>
+<ul>
+  <li>Viết 1 trang hướng dẫn: thế nào là lỗi, thế nào là "không chắc". Ví dụ: vật cao dưới 10px hoặc bị che quá nửa thì ghi <code>khong_chac</code>, không ghi <code>loi</code>.</li>
+  <li>Để vẽ box, dùng <code>draw_image</code> trong <code>src/viz/draw.py</code> của Sơn.</li>
+  <li><b>Không mở</b> <code>manual-check-v1.key.json</code> cho đến khi cả hai đã kiểm xong.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="num">4</span> Chốt cách lấy mẫu audit với Tú Anh <span class="tag">lượt 1</span></h2>
+<p>Hàng đợi hiện cứ 10 ảnh ở nửa trên thì chèn 1 ảnh ngẫu nhiên ở nửa dưới. Kế hoạch đã chốt là lấy ngẫu nhiên khoảng 5% số ảnh <b>nằm ngoài top 20%</b>, để ước lượng số lỗi bị bỏ sót ở phần không review. Bạn và Tú Anh chốt sáng nay:</p>
+<ul>
+  <li>ngưỡng (top 20%), tỉ lệ lấy mẫu, seed;</li>
+  <li>mẫu số khi tính tỉ lệ lỗi bỏ sót;</li>
+  <li>trong báo cáo, kết quả audit ghi riêng, không gộp với 150 ảnh kiểm tay.</li>
+</ul>
+<p>Ghi định nghĩa đã chốt vào mô tả PR của bạn. Tú Anh sửa code theo định nghĩa đó.</p>
+</section>
+
+<section>
+<h2><span class="num">5</span> Đưa một spec đã duyệt chạy qua <code>rank</code> <span class="tag">lượt 2</span></h2>
+<div class="note bad"><b>Không duyệt thẳng <code>bdd-default.yaml</code> được.</b>
+<ul>
+  <li><code>rank --spec</code> chỉ nhận spec đã qua kiểm tra nguồn (<code>load_approved</code> trong <code>src/guideline/extract.py</code>). Spec phải có file nguồn PDF/DOCX, có sha256, và mọi câu trích phải có trong nguồn.</li>
+  <li><code>bdd-default.yaml</code> có <code>source.file: null</code> nên sẽ bị từ chối.</li>
+  <li>Điền tay <code>approved_by</code> cũng không qua được bước kiểm tra này.</li>
+</ul></div>
+<p>Đi theo đúng luồng công cụ của Tú Anh:</p>
+<ol>
+  <li>Viết một tài liệu guideline ngắn (DOCX) dựa trên guideline BDD100K, gồm danh sách class, ngưỡng chiều cao tối thiểu và thuộc tính bắt buộc. Có thể xem mẫu bằng <code>python -m src.cli guideline samples</code>.</li>
+  <li>Trích bản nháp. Bước này cần <code>GEMINI_API_KEY</code>: đặt bằng <code>export</code> trong terminal của bạn, không ghi vào file nào trong repo. Tú Anh hỗ trợ bước này.
+<div class="cmd"><pre>python -m src.cli guideline extract docs/guideline-m13.docx</pre></div></li>
+  <li>Đọc lại và sửa bản nháp bằng <code>python -m src.cli guideline ui</code>, đối chiếu từng ngưỡng với câu trích và số trang.</li>
+  <li>Duyệt. Spec đã duyệt được ghi vào <code>configs/guidelines/&lt;id&gt;.yaml</code>:
+<div class="cmd"><pre>python -m src.cli guideline approve configs/guidelines/drafts/&lt;id&gt;.yaml --approved-by "Long" --confirm-reviewed</pre></div></li>
+  <li>Chạy và đo, rồi ghi số vào PR và so với 0.310:
+<div class="cmd"><pre>python -m src.cli rank --version rule-v1.4-spec --spec configs/guidelines/&lt;id&gt;.yaml --preds data/yolo_preds.parquet --signals
+python -m src.cli evaluate --queue reports/ranked_queue_rule-v1.4-spec.csv --split test</pre></div></li>
+</ol>
+<div class="note warn">
+<ul>
+  <li>Nếu bản nháp có rule <code>model_object_missing</code> (R4) mà R4 chưa viết, <code>rank</code> sẽ báo "Luật chưa triển khai". Khi đó bỏ rule này khỏi bản nháp trước khi duyệt, và ghi lại trong PR.</li>
+  <li>Không có Gemini key thì báo tôi ngay. Việc này không để kẹt đến tối.</li>
+</ul></div>
+</section>
+
+<section>
+<h2><span class="num">6</span> Kiểm tay 150 ảnh và tính kappa <span class="tag">lượt 2</span></h2>
+<ul>
+  <li>Bạn và Sơn kiểm <b>độc lập</b>: không xem phiếu của nhau, không trao đổi về từng ảnh cho đến khi cả hai đã kiểm xong.</li>
+  <li>Xong cả hai thì mới đối chiếu. Tính Cohen's kappa trên <code>loi</code> và <code>khong_loi</code>, để riêng các ảnh <code>khong_chac</code> và báo số lượng của chúng.</li>
+  <li>Sau đó mới mở <code>manual-check-v1.key.json</code>, tách kết quả theo nhóm ảnh ngẫu nhiên và nhóm đầu hàng đợi. Con số chính của báo cáo là tỉ lệ lỗi thật ở đầu hàng đợi so với ảnh ngẫu nhiên.</li>
+  <li>Phiếu và kết quả gửi qua Drive, không commit.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="num">7</span> Khung báo cáo <span class="tag">lượt 2</span></h2>
+<p>Viết <code>docs/bao-cao.md</code> gồm mục lục và các chỗ điền số, chưa cần viết hết. Mỗi con số ghi kèm nguồn: dòng nào trong <code>reports/results.jsonl</code>, file kiểm tay nào, file pilot nào.</p>
+<ul>
+  <li>Không tự gõ số khi chưa có nguồn. Phần chưa chạy thì ghi "chưa có".</li>
+  <li>Phân biệt rõ ba loại kết quả: lỗi tiêm (đo tự động), kiểm tay (lỗi thật) và pilot (thời gian).</li>
+</ul>
+<p class="tag">R4 làm cùng Sơn, chỉ khi các việc 2 đến 7 đã xong.</p>
+</section>
+
+<section>
+<h2>Trước khi mở PR</h2>
+<div class="cmd"><pre>pytest -q
+ruff check .
+git status   # không được có file trong data/, reports/ hay file .env</pre></div>
+<ul>
+  <li>Mỗi việc một PR vào <code>develop</code>. Mô tả PR ghi đã làm gì, chạy lệnh gì, kết quả thế nào.</li>
+  <li>Kẹt quá 30 phút thì nhắn nhóm.</li>
+</ul>
+</section>
+
+<section>
+<h2>Checklist</h2>
+<p class="tag">Đánh dấu chỉ để bạn tự theo dõi, tải lại trang là mất.</p>
+<label class="chk"><input type="checkbox"> Checksum <code>det_val.json</code> ra <code>f7cde1a3…</code></label>
+<label class="chk"><input type="checkbox"> R2 <code>class_not_allowed</code> và có test</label>
+<label class="chk"><input type="checkbox"> Thêm cột <code>has_occluded</code> và <code>has_truncated</code>, R3 <code>missing_attribute</code> và có test</label>
+<label class="chk"><input type="checkbox"> Phiếu kiểm tay đã gửi nhóm</label>
+<label class="chk"><input type="checkbox"> Chốt định nghĩa audit với Tú Anh</label>
+<label class="chk"><input type="checkbox"> PR lượt 1 trước 12:30</label>
+<label class="chk"><input type="checkbox"> Spec đã duyệt chạy được <code>rank --spec</code>, có số <code>rule-v1.4-spec</code></label>
+<label class="chk"><input type="checkbox"> Kiểm tay xong 150 ảnh, tính kappa với Sơn</label>
+<label class="chk"><input type="checkbox"> <code>docs/bao-cao.md</code> có khung và nguồn của từng số</label>
+</section>
+</main>
+<script>
+document.querySelectorAll('.cmd').forEach(function (box) {
+  var b = document.createElement('button');
+  b.className = 'copy'; b.type = 'button'; b.textContent = 'Copy';
+  b.onclick = function () {
+    var t = box.querySelector('pre').innerText.split('\n').filter(function (l) { return !/^\s*#/.test(l); }).join('\n');
+    navigator.clipboard.writeText(t).then(function () { b.textContent = 'Đã copy'; setTimeout(function () { b.textContent = 'Copy'; }, 1200); });
+  };
+  box.appendChild(b);
+});
+</script>
+</body>
+</html>

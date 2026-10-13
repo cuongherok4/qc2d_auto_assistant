@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hướng dẫn Tú Anh 15/10</title>
+<style>
+:root {
+  --bg: #fafaf8; --fg: #1d1d1b; --muted: #66665f; --line: #e2e1db; --card: #ffffff;
+  --code-bg: #f1f0ea; --accent: #2457c5; --ok: #1f7a3d; --warn: #a15c00; --bad: #b42318;
+  --warn-bg: #fff6e5; --bad-bg: #fdecea; --ok-bg: #e9f6ee;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161615; --fg: #ecebe6; --muted: #a3a29b; --line: #34332f; --card: #1f1f1d;
+    --code-bg: #2a2a27; --accent: #7aa2ff; --ok: #6fcf8f; --warn: #f0b45a; --bad: #ff8a80;
+    --warn-bg: #2e2516; --bad-bg: #2f1a18; --ok-bg: #16281d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161615; --fg: #ecebe6; --muted: #a3a29b; --line: #34332f; --card: #1f1f1d;
+  --code-bg: #2a2a27; --accent: #7aa2ff; --ok: #6fcf8f; --warn: #f0b45a; --bad: #ff8a80;
+  --warn-bg: #2e2516; --bad-bg: #2f1a18; --ok-bg: #16281d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 820px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 1.7rem; margin: 0 0 4px; }
+h2 { font-size: 1.2rem; margin: 0 0 8px; display: flex; gap: 10px; align-items: baseline; }
+.sub { color: var(--muted); margin: 0 0 24px; }
+.num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--bg);
+  display: inline-grid; place-items: center; font-size: .9rem; font-weight: 600; transform: translateY(-2px); }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin: 14px 0; }
+p { margin: 8px 0; }
+ul, ol { margin: 8px 0; padding-left: 22px; }
+li { margin: 3px 0; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.cmd { position: relative; margin: 10px 0; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; margin: 0; overflow-x: auto;
+  font: .88rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.copy { position: absolute; top: 6px; right: 6px; border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  border-radius: 6px; font-size: .78rem; padding: 3px 8px; cursor: pointer; }
+.copy:hover { color: var(--fg); }
+.note { border-radius: 8px; padding: 10px 14px; margin: 10px 0; }
+.note.warn { background: var(--warn-bg); border-left: 3px solid var(--warn); }
+.note.bad { background: var(--bad-bg); border-left: 3px solid var(--bad); }
+.note.ok { background: var(--ok-bg); border-left: 3px solid var(--ok); }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; margin: 8px 0; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.tbl { overflow-x: auto; }
+label.chk { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; cursor: pointer; }
+label.chk input { margin-top: 5px; }
+.tag { font-size: .78rem; color: var(--muted); font-weight: 400; }
+</style>
+</head>
+<body>
+<main>
+<h1>Việc của Tú Anh · 15/10</h1>
+<p class="sub">Chạy hàng đợi thật qua CVAT và extension, chỉnh cách lấy mẫu audit, sau đó pilot 30 ảnh. <b>Lượt 1 mở PR trước 12:30</b>, lượt 2 nộp trước buổi review tối. Cấu hình và số liệu đóng băng sau buổi review tối 15/10.</p>
+
+<section>
+<h2>Nhóm đã đổi sang nhãn BDD100K bản 2018</h2>
+<p>Từ 14/10, nhóm dùng nhãn gốc bản 2018 lấy từ Drive của Sơn, thay cho det_20. Tôi đã tiêm lỗi lại, chạy lại toàn bộ hàng đợi và đã merge vào <code>develop</code>. Hàng đợi dùng cho demo vẫn là <code>rule-v1.2</code>.</p>
+<p>Trên 2000 ảnh test, hàng đợi <code>rule-v1.2</code> bắt được 0.310 số lỗi khi chỉ review 20% ảnh đầu, còn thứ tự ngẫu nhiên bắt được 0.205.</p>
+<div class="note warn">Mapping CVAT, file <code>data/review.db</code> và các task CVAT bạn tạo từ nhãn det_20 đều đã cũ. Bạn tạo task mới, không sửa task cũ.</div>
+</section>
+
+<section>
+<h2><span class="num">1</span> Lấy code và dữ liệu</h2>
+<div class="cmd"><pre>git fetch
+git checkout -b feat/tuanh-review-that origin/develop
+uv pip install -e ".[dev]"</pre></div>
+<p>Tải <a href="https://drive.google.com/drive/folders/1JHSxrLOmYw1VAhiSNd4Ns-5T3iTMOiyQ"><code>m13-data-2018-14-10.zip</code></a> (38MB), giải nén ở thư mục gốc repo. Ảnh không có trong zip. Nếu máy bạn chưa có ảnh thì lấy <code>bdd100k_dataset_for_yolo.zip</code> trên <a href="https://drive.google.com/drive/folders/1l6m-NQaUovVrjoU2VNubIm7743qUlAST">Drive của Sơn</a>, đặt 10k ảnh val vào <code>data/bdd100k/images/100k/val/</code>.</p>
+<div class="cmd"><pre>unzip -o m13-data-2018-14-10.zip
+rm -rf data/cache
+sha256sum data/bdd100k/labels/det_20/det_val.json
+# phải ra: f7cde1a3bc064b2cbd2ffbcf58b29889e7396f4a4176fd17e3d93e08dfb4ff00
+python -m src.cli doctor</pre></div>
+<div class="note bad">Checksum ra khác thì <b>dừng lại</b> và báo tôi.</div>
+</section>
+
+<section>
+<h2><span class="num">2</span> Chạy <code>rule-v1.2</code> qua CVAT và extension <span class="tag">lượt 1</span></h2>
+<p>Mục tiêu là trả lời câu hỏi: <b>hàng đợi thật, ảnh thật và box nghi vấn thật có hiện đúng trong CVAT không?</b> Đến giờ luồng này mới chạy với fixture.</p>
+<ol>
+  <li>Bật CVAT local, chạy <code>python -m src.cli doctor</code>, kiểm tra CVAT mở được ở <code>http://localhost:8080</code>.</li>
+  <li>Nạp ảnh của hàng đợi vào một task CVAT <b>mới</b>. Nạp trước 50 ảnh đầu cho nhanh: tạo file CSV con chứa 50 dòng đầu, giữ nguyên header.
+<div class="cmd"><pre>head -n 51 reports/ranked_queue_rule-v1.2.csv > data/queue-rule-v1.2-top50.csv
+python -m src.cli cvat-import --name m13-rule-v1.2-top50 --queue data/queue-rule-v1.2-top50.csv
+python -m src.cli cvat-sync --queue data/queue-rule-v1.2-top50.csv</pre></div>
+  </li>
+  <li>Chạy API, trỏ vào hàng đợi và evidence <code>rule-v1.2</code>:
+<div class="cmd"><pre>M13_QUEUE_FILE=reports/ranked_queue_rule-v1.2.csv \
+M13_EVIDENCE_FILE=reports/evidence_rule-v1.2.jsonl \
+python -m src.cli serve</pre></div>
+  </li>
+  <li>Mở extension trong CVAT, review lần lượt <b>10 ảnh đầu</b>. Với mỗi ảnh, kiểm tra:
+    <ul>
+      <li>CVAT có nhảy đúng frame của <code>image_id</code> không;</li>
+      <li>box nghi vấn có tô đúng vị trí trong <code>evidence_rule-v1.2.jsonl</code> không;</li>
+      <li>lý do hiển thị có đọc được không;</li>
+      <li>lưu verdict có ghi vào <code>data/review.db</code> không, bộ đếm thời gian có chạy không;</li>
+      <li>bấm nút kiểm tra lại (recheck) sau khi sửa và Save trong CVAT, xem có ra hàng đợi mới không.</li>
+    </ul>
+  </li>
+</ol>
+<p>Ghi một bảng vào mô tả PR: mỗi ảnh một dòng gồm <code>image_id</code>, đúng frame, đúng box, lưu được verdict, ghi chú. Gặp lỗi thì sửa luôn trong PR và thêm test.</p>
+<div class="note warn">Nếu đến 12:30 vẫn còn lỗi chưa sửa xong, vẫn mở PR kèm bảng kết quả. Nhóm cần biết lỗi ở đâu hơn là chờ bản hoàn hảo.</div>
+</section>
+
+<section>
+<h2><span class="num">3</span> Chỉnh cách lấy mẫu audit <span class="tag">lượt 1, cùng Long</span></h2>
+<p>Hiện <code>QueueService.schedule</code> (<code>src/api/service.py</code>) chia hàng đợi làm hai nửa, cứ 10 ảnh ở nửa trên thì chèn 1 ảnh ngẫu nhiên ở nửa dưới (<code>audit_every: 10</code> trong <code>configs/review.yaml</code>). Cách này <b>khác</b> kế hoạch đã chốt: lấy ngẫu nhiên khoảng 5% số ảnh <b>nằm ngoài top 20%</b>.</p>
+<ul>
+  <li>Sáng nay chốt với Long: ngưỡng là top 20%, tỉ lệ bao nhiêu, mẫu số là gì.</li>
+  <li>Sửa <code>schedule</code> theo định nghĩa đã chốt, đưa các tham số vào <code>configs/review.yaml</code>, giữ <code>audit_seed</code>.</li>
+  <li>Viết test: với 100 ảnh, ảnh audit chỉ lấy từ hạng 21 trở xuống, số ảnh audit đúng tỉ lệ, cùng seed ra cùng kết quả.</li>
+  <li>Không đổi cách tính <code>is_audit</code> trong verdict. Khi export, ảnh audit vẫn phải tách riêng được.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="num">4</span> Pilot 30 ảnh <span class="tag">lượt 2</span></h2>
+<p>Câu hỏi của pilot: <b>với cùng thời gian, review theo hàng đợi ưu tiên có tìm được nhiều ảnh lỗi hơn review theo thứ tự file không?</b></p>
+<ul>
+  <li>Dùng cùng 30 ảnh và cùng nhãn ban đầu. Tạo <b>hai task CVAT riêng</b> (hai lần <code>cvat-import</code> với hai <code>--name</code> khác nhau), để người này sửa không ảnh hưởng người kia.</li>
+  <li>Hai người review <b>khác nhau</b>: một người theo <code>priority</code>, một người theo <code>file</code>. Bạn chọn người cùng Cường. Một người không được review cùng 30 ảnh hai lần.</li>
+  <li>Pilot chỉ nhận dữ liệu thật: chạy API với <code>M13_DATA_PURPOSE=real</code>.</li>
+  <li>Mỗi người đăng ký <b>trước khi bắt đầu</b> bằng một file plan JSON:
+<div class="cmd"><pre>{"reviewer": "ten-nguoi-review", "session_id": "pilot-15-10-a",
+ "comparison_id": "pilot-15-10", "order": "priority"}</pre></div>
+<div class="cmd"><pre>python -m src.cli pilot-register --plan data/pilot/plan-a.json --confirm-human</pre></div>
+  </li>
+  <li>Review xong thì export từng người, rồi so sánh:
+<div class="cmd"><pre>python -m src.cli pilot-export --out data/pilot/export-a.json --session-id pilot-15-10-a
+python -m src.cli pilot-export --out data/pilot/export-b.json --session-id pilot-15-10-b
+python -m src.cli pilot-compare --out data/pilot/compare.json data/pilot/export-a.json data/pilot/export-b.json</pre></div>
+  </li>
+</ul>
+<p>Các file trong <code>data/pilot/</code> gửi qua Drive, <b>không commit</b>. Gửi nhóm: mỗi người mất bao nhiêu phút, tìm được bao nhiêu ảnh lỗi, có bao nhiêu ảnh bỏ qua (<code>skip</code> không tính là đúng).</p>
+<div class="note warn">Chỉ có 30 ảnh và 2 người nên kết quả chỉ mang tính mô tả, vì tốc độ của hai người vốn khác nhau. Báo cáo cũng sẽ ghi như vậy. Nếu còn thời gian thì làm thêm một batch nữa và đổi vai hai người.</div>
+</section>
+
+<section>
+<h2><span class="num">5</span> Ghi các bước dựng lại demo <span class="tag">lượt 2</span></h2>
+<p>Sáng 16/10 cả nhóm test lại lần cuối theo đúng file này. Viết vào <code>docs/demo-chay-lai.md</code> các lệnh <b>theo đúng thứ tự</b> bạn đã chạy ở bước 2, từ máy chỉ có repo và zip dữ liệu đến lúc extension hiện box. Ghi cả thời gian mỗi bước và lỗi hay gặp.</p>
+<p class="tag">Phần deploy lên server Cường sẽ giao riêng sau. File này chỉ cần mô tả cách chạy trên máy local.</p>
+</section>
+
+<section>
+<h2>Trước khi mở PR</h2>
+<div class="cmd"><pre>pytest -q
+ruff check .
+git status   # không được có file trong data/, reports/ hay file .env</pre></div>
+<ul>
+  <li>Mỗi việc một PR vào <code>develop</code>. Mô tả PR ghi đã làm gì, chạy lệnh gì, kết quả thế nào.</li>
+  <li>Không commit mật khẩu CVAT, token hay API key.</li>
+  <li>Kẹt quá 30 phút thì nhắn nhóm.</li>
+</ul>
+</section>
+
+<section>
+<h2>Checklist</h2>
+<p class="tag">Đánh dấu chỉ để bạn tự theo dõi, tải lại trang là mất.</p>
+<label class="chk"><input type="checkbox"> Checksum <code>det_val.json</code> ra <code>f7cde1a3…</code>, <code>doctor</code> không báo lỗi</label>
+<label class="chk"><input type="checkbox"> Task CVAT mới cho top 50 của <code>rule-v1.2</code>, chạy <code>cvat-sync</code> lại</label>
+<label class="chk"><input type="checkbox"> 10 ảnh đầu: đúng frame, đúng box, lưu được verdict (có bảng trong PR)</label>
+<label class="chk"><input type="checkbox"> Thử nút kiểm tra lại sau khi Save trong CVAT</label>
+<label class="chk"><input type="checkbox"> Chốt định nghĩa audit với Long, sửa <code>schedule</code> và có test</label>
+<label class="chk"><input type="checkbox"> PR lượt 1 trước 12:30</label>
+<label class="chk"><input type="checkbox"> Pilot: 2 task, 2 người, đăng ký trước, export và compare</label>
+<label class="chk"><input type="checkbox"> Gửi số phút và số ảnh lỗi của pilot</label>
+<label class="chk"><input type="checkbox"> <code>docs/demo-chay-lai.md</code></label>
+</section>
+</main>
+<script>
+document.querySelectorAll('.cmd').forEach(function (box) {
+  var b = document.createElement('button');
+  b.className = 'copy'; b.type = 'button'; b.textContent = 'Copy';
+  b.onclick = function () {
+    var t = box.querySelector('pre').innerText.split('\n').filter(function (l) { return !/^\s*#/.test(l); }).join('\n');
+    navigator.clipboard.writeText(t).then(function () { b.textContent = 'Đã copy'; setTimeout(function () { b.textContent = 'Copy'; }, 1200); });
+  };
+  box.appendChild(b);
+});
+</script>
+</body>
+</html>
