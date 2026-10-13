@@ -1,10 +1,12 @@
-# Tiến độ M13 · cập nhật 14/10 sáng
+# Tiến độ M13 · cập nhật 14/10 tối
+
+Việc còn lại cho 15/10: [viec-con-lai-15-10.md](viec-con-lai-15-10.md).
 
 Phần trăm = số việc đã xong / số việc được giao trong [bản phân công 13/10](phan-tich-va-phan-cong-13-10.md). Việc chỉ "đã viết" mà chưa chạy trên dữ liệu thật thì chưa tính là xong. Phần mở rộng (GBM, VLM, tự học lại) không tính vào.
 
 ```
-Cả nhóm   ████████████░░░░░░░░  22/37  59%
-Cường     █████████████████░░░  10/12  83%
+Cả nhóm   ████████████░░░░░░░░  23/37  62%
+Cường     ██████████████████░░  11/12  92%
 Tú Anh    █████████████░░░░░░░   5/8   63%
 Sơn       █████████████░░░░░░░   5/8   63%   (3 việc Cường làm thay)
 Long      ████░░░░░░░░░░░░░░░░   2/9   22%
@@ -38,7 +40,7 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 
 ## Từng người
 
-### Cường · tích hợp & đánh giá — 10/12
+### Cường · tích hợp & đánh giá — 11/12
 
 - [x] Ghép nhánh Tú Anh, Long vào develop
 - [x] Tiêm lỗi (`inject`), 2964 lỗi trên 10k ảnh
@@ -50,7 +52,7 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 - [x] 3 tín hiệu hình học *(làm thay Tú Anh)*
 - [x] API đọc đúng queue/evidence `rule-v1.2` (đã chạy thử)
 - [x] Danh sách 150 ảnh kiểm tay (`manual-sample`)
-- [ ] Merge PR `feat/cuong-detector-signals`, chia dữ liệu qua Drive
+- [x] Merge PR `feat/cuong-detector-signals`, `feat/cuong-gbm`; chia dữ liệu qua Drive
 - [ ] Tổng hợp số liệu cuối sau khi có kiểm tay và pilot (trước 15/10 20:00)
 - [x] *(mở rộng, không tính %)* GBM `gbm-v1`: `python -m src.cli train-gbm --version gbm-v1 --preds data/yolo_preds.parquet`
 
