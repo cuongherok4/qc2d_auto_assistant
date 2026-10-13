@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gbm = ["lightgbm>=4.1"]
-detector = ["torch>=2.1", "ultralytics>=8.1"]
+detector = ["torch>=2.1", "transformers>=4.45", "pillow>=10.1"]  # RT-DETR qua transformers (Apache-2.0)
 guideline = ["python-docx>=1.1", "pdfplumber>=0.10"]
 browser = ["playwright>=1.50", "pillow>=10.1"]
 demo = ["pillow>=10.1"]

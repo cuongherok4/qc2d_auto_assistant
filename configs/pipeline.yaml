@@ -1,9 +1,19 @@
 # Chỉ bật các tín hiệu đã triển khai. --signals để chỉ định cấu hình thí nghiệm khác.
-signals: [hard_condition, crowded, many_tiny, rare_class, edge_no_trunc]
+signals: [hard_condition, crowded, many_tiny, rare_class, edge_no_trunc,
+          size_outlier, dup_same_class, overlap_cross_class]
 signal_options:
   crowded: {pct_low: 75, pct_high: 99}
   many_tiny: {max_h: 20, min_count: 3, saturate: 10}
   rare_class: {max_share: 0.01}
   edge_no_trunc: {margin: 2.0, saturate: 2}
-detector_options: {}
-# --preds sẽ yêu cầu đủ 4 tín hiệu của Sơn; chưa triển khai thì dừng, không giả kết quả.
+  size_outlier: {z_thr: 3.0, z_sat: 6.0, min_class_count: 30}
+  dup_same_class: {iou_thr: 0.5}
+  overlap_cross_class: {iou_thr: 0.7, allowed_pairs: [[rider, bicycle], [rider, motorcycle]]}
+detector_options: {}   # ghi đè DEFAULTS trong src/features/model_disagreement.py
+# Detector chạy một lần ra data/yolo_preds.parquet (python -m src.cli detect). RT-DETR R50 COCO, Apache-2.0.
+detector:
+  model: PekingU/rtdetr_r50vd
+  revision: df939e661d8c52e80608d1ec566561aabd25a4e7
+  conf: 0.05
+  batch_size: 4
+# rank --preds bật 4 tín hiệu detector. Đo val 13/10: chỉ dùng 4 tín hiệu này (--signals để trống) tốt hơn gộp cả 12.
