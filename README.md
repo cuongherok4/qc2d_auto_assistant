@@ -6,6 +6,8 @@ Trợ lý ưu tiên review nhãn detection 2D trên BDD100K. Thay vì QC review 
 - **Chỉ số chính:** recall lỗi trong top 20% ảnh; thời gian review tiết kiệm
 - **Nhóm:** Hoàng Mạnh Cường (lead), Long (BA), Tú Anh (BE), Sơn (BE)
 
+**Tiến độ (cập nhật 13/10 tối):** [ai đã xong gì, ai làm tiếp, kết quả hiện có](docs/tien-do.md).
+
 **Dành cho cả người không chuyên kỹ thuật:** [Hướng dẫn 10 việc cần làm: ai làm, làm thế nào, giao gì và khi nào tính là xong](docs/huong-dan-cong-viec-de-hieu.md).
 
 **Cập nhật 13/10:** [Phân tích đề tài, hiện trạng các nhánh và phân công tiếp theo](docs/phan-tich-va-phan-cong-13-10.md) — gồm 4 sơ đồ SVG để chia sẻ với nhóm; ghi nhận phần API, CVAT, extension và guideline tools Tú Anh đã viết.

@@ -4,6 +4,7 @@ load      đọc nhãn BDD100K, tạo cache parquet           (bước 1)
 inject    tiêm lỗi có đáp án                            (bước 2)
 rank      tín hiệu + rule -> hàng đợi + evidence     (bước 3–4)
 evaluate  đo hàng đợi trên đáp án, ghi results.jsonl     (bước 7)
+detect    chạy detector -> yolo_preds.parquet           (bước 3b)
 check     kiểm file preds/queue đúng quy ước
 samples   tạo file mẫu đúng quy ước để code khi chưa có dữ liệu thật
 cvat-sync sinh bảng image_id -> frame từ CVAT local      (bước 5)
@@ -72,6 +73,26 @@ def cmd_evaluate(args) -> int:
     keys = ("recall20_img", "recall20_weighted", "precision20", "ndcg", "time_saved")
     print(pd.read_csv(out / "comparison.csv")[["method", *keys]].to_string(index=False))
     print(f"chi tiết -> {out}; dòng mới trong reports/results.jsonl")
+    return 0
+
+
+def cmd_manual_sample(args) -> int:
+    from src.eval.manual_sample import sample
+
+    files = sample(args.queue, args.out, args.name, n_random=args.n_random, n_top=args.n_top, seed=args.seed)
+    print(f"phát cho người kiểm -> {files['list']}\nđáp án nhóm (chỉ mở khi đối chiếu) -> {files['key']}")
+    return 0
+
+
+def cmd_detect(args) -> int:
+    from src.features.detector import run_detector
+
+    out = args.out or config.path("preds_parquet")
+    summary = run_detector(args.images or config.path("images_dir"), out, args.conf, model=args.model,
+                           batch_size=args.batch_size, device=args.device,
+                           image_ids=args.limit and sorted(p.stem for p in Path(
+                               args.images or config.path("images_dir")).glob("*.jpg"))[:args.limit])
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -342,7 +363,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("rank", help="tín hiệu + rule -> ranked_queue, evidence, manifest (không ghi đè)")
     p.add_argument("--labels", type=Path, help="mặc định: nhãn đã tiêm lỗi")
     p.add_argument("--version", default="rule-v0")
-    p.add_argument("--signals", nargs="+", help="mặc định: configs/pipeline.yaml signals")
+    p.add_argument("--signals", nargs="*", help="mặc định: configs/pipeline.yaml signals;"
+                   " để trống + --preds = chỉ tín hiệu detector")
     p.add_argument("--preds", type=Path, help="yolo_preds.parquet; bật 4 tín hiệu detector")
     p.add_argument("--spec", type=Path, help="spec guideline ĐÃ DUYỆT; bật tín hiệu guideline")
     p.add_argument("--out", type=Path, help="mặc định: reports/")
@@ -355,6 +377,25 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--top-frac", type=float, default=0.2)
     p.add_argument("--out", type=Path, help="mặc định: reports/eval_<version>_<split>/")
     p.set_defaults(fn=cmd_evaluate)
+
+    p = sub.add_parser("detect", help="detector COCO -> yolo_preds.parquet, chạy tiếp được nếu bị ngắt")
+    p.add_argument("--images", type=Path, help="mặc định: configs/paths.yaml images_dir")
+    p.add_argument("--out", type=Path, help="mặc định: configs/paths.yaml preds_parquet")
+    p.add_argument("--model", help="mặc định: configs/pipeline.yaml detector.model")
+    p.add_argument("--conf", type=float)
+    p.add_argument("--batch-size", type=int)
+    p.add_argument("--device", help="cuda/cpu; mặc định tự chọn")
+    p.add_argument("--limit", type=int, help="chỉ chạy N ảnh đầu (thử nhanh)")
+    p.set_defaults(fn=cmd_detect)
+
+    p = sub.add_parser("manual-sample", help="chọn mẫu kiểm tay: ngẫu nhiên + đầu hàng đợi (nhãn gốc)")
+    p.add_argument("--queue", type=Path, required=True, help="queue chấm trên nhãn gốc")
+    p.add_argument("--name", default="manual-check-v1")
+    p.add_argument("--out", type=Path, default=Path("data/manual_check"))
+    p.add_argument("--n-random", type=int, default=75)
+    p.add_argument("--n-top", type=int, default=75)
+    p.add_argument("--seed", type=int, default=42)
+    p.set_defaults(fn=cmd_manual_sample)
 
     p = sub.add_parser("check", help="kiểm file đúng quy ước")
     p.add_argument("--preds", type=Path)

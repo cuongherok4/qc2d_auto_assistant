@@ -80,3 +80,26 @@ def test_recheck_adapter_rescores_saved_labels(flow, tmp_path):
     with pytest.raises(ValueError, match="khác queue"):
         pipeline.recheck(snapshot=snapshot, queue=queue.iloc[::-1], output_dir=tmp_path / "re2",
                          model_version="recheck-2", seed=42, manifest_file=manifest_file)
+
+
+def test_manifest_paths_portable_inside_repo(tmp_path):
+    inside = config.ROOT / "reports" / "ranked_queue_x.csv"
+    assert pipeline.portable(inside) == "reports/ranked_queue_x.csv"
+    assert pipeline.located("reports/ranked_queue_x.csv") == inside
+    assert pipeline.located(pipeline.portable(tmp_path / "q.csv")) == (tmp_path / "q.csv").resolve()
+
+
+def test_manual_sample_is_blind_and_disjoint(flow):
+    queue = flow / "reports_dir" / "ranked_queue_rule-t1.csv"
+    out = flow / "manual"
+    args = ["manual-sample", "--queue", str(queue), "--out", str(out), "--n-random", "10", "--n-top", "10"]
+    assert cli.main(args) == 0
+    listed = pd.read_csv(out / "manual-check-v1.csv", dtype={"image_id": str})
+    assert list(listed.columns) == ["check_order", "image_id"] and listed.image_id.is_unique
+    key = json.loads((out / "manual-check-v1.key.json").read_text())
+    groups = {r["image_id"]: r["group"] for r in key["images"]}
+    assert set(groups) == set(listed.image_id) and list(groups.values()).count("top") == 10
+    ranked = pd.read_csv(queue, dtype={"image_id": str}).sort_values("rank").image_id
+    assert [i for i in ranked if groups.get(i) == "top"] == [i for i in ranked if i not in {
+        k for k, g in groups.items() if g == "random"}][:10]
+    assert cli.main(args) == 1  # không ghi đè mẫu đã phát

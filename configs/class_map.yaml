@@ -10,6 +10,7 @@ coco_to_bdd:
   bicycle: bicycle
   car: car
   motorcycle: motorcycle
+  motorbike: motorcycle   # tên trong config của RT-DETR (transformers)
   bus: bus
   train: train
   truck: truck
