@@ -25,6 +25,19 @@ def write_json(path, value):
                                     allow_nan=False)+"\n", encoding="utf-8")
 
 
+def portable(path):
+    """Đường dẫn ghi vào manifest: tương đối với gốc repo nếu nằm trong repo,
+    để chép thư mục sang máy khác vẫn dùng được."""
+    path = Path(path).resolve()
+    return str(path.relative_to(config.ROOT)) if path.is_relative_to(config.ROOT) else str(path)
+
+
+def located(path):
+    """Ngược lại của portable(); manifest cũ ghi đường dẫn tuyệt đối vẫn đọc được."""
+    path = Path(path)
+    return path if path.is_absolute() else config.ROOT / path
+
+
 def load_spec(path):
     """Require the source-checked approval produced by Tú Anh's existing tools."""
     from src.guideline.extract import load_approved
@@ -108,15 +121,15 @@ def publish(frames, output_dir, version, *, names=None, weights=None, options=No
                 "evidence_sha256": sha256(paths["evidence_file"]),
                 "used_signals": list(signals), "requested_signals": names, "weights": weights,
                 "options": options, "spec": spec, "n_images": len(images),
-                "preds_file": str(Path(preds_file).resolve()) if preds_file else None,
+                "preds_file": portable(preds_file) if preds_file else None,
                 "preds_sha256": sha256(preds_file) if preds_file else None,
-                "provenance": provenance or {}, **{k: str(v) for k, v in paths.items()}}
+                "provenance": provenance or {}, **{k: portable(v) for k, v in paths.items()}}
     write_json(paths["manifest_file"], manifest)
     # Queue appears last: consumers can never see a new queue with missing evidence.
     temp = paths["queue_file"].with_suffix(".csv.tmp")
     temp.write_bytes(queue_bytes)
     temp.replace(paths["queue_file"])
-    return manifest
+    return {**manifest, **{k: str(v) for k, v in paths.items()}}  # người gọi nhận đường dẫn tuyệt đối
 
 
 def recheck(*, snapshot, queue, output_dir, model_version, seed, manifest_file=None):
@@ -135,19 +148,20 @@ def recheck(*, snapshot, queue, output_dir, model_version, seed, manifest_file=N
     if manifest["method"] != "rule":
         raise ValueError("Adapter này chỉ chấm lại rule, không tự hạ GBM thành rule")
     for kind in ("queue", "labels", "features", "evidence"):
-        if sha256(manifest[f"{kind}_file"]) != manifest[f"{kind}_sha256"]:
+        if sha256(located(manifest[f"{kind}_file"])) != manifest[f"{kind}_sha256"]:
             raise ValueError(f"Artifact nguồn đã đổi: {kind}")
-    original = pd.read_csv(manifest["queue_file"], dtype={"image_id": str, "model_version": str}).fillna("")
+    original = pd.read_csv(located(manifest["queue_file"]),
+                           dtype={"image_id": str, "model_version": str}).fillna("")
     try:
         pd.testing.assert_frame_equal(original.reset_index(drop=True), queue.reset_index(drop=True),
                                       check_dtype=False)
     except AssertionError as exc:
         raise ValueError("Queue đang phục vụ khác queue trong manifest") from exc
-    if manifest["preds_file"] and sha256(manifest["preds_file"]) != manifest["preds_sha256"]:
+    if manifest["preds_file"] and sha256(located(manifest["preds_file"])) != manifest["preds_sha256"]:
         raise ValueError("Prediction nguồn đã đổi")
     if (snapshot["width"], snapshot["height"]) != (contracts.IMG_W, contracts.IMG_H):
         raise ValueError("Snapshot cần toạ độ ảnh gốc 1280x720")
-    frames = json.loads(Path(manifest["labels_file"]).read_text(encoding="utf-8"))
+    frames = json.loads(located(manifest["labels_file"]).read_text(encoding="utf-8"))
     matches = [fr for fr in frames if fr["name"].removesuffix(".jpg") == snapshot["image_id"]]
     if len(matches) != 1:
         raise ValueError("Snapshot không thuộc tập ảnh nguồn")
@@ -163,7 +177,8 @@ def recheck(*, snapshot, queue, output_dir, model_version, seed, manifest_file=N
     matches[0]["labels"] = labels
     return publish(frames, output_dir, model_version, names=manifest["requested_signals"],
                    weights=manifest["weights"], options=manifest["options"],
-                   preds_file=manifest["preds_file"], spec=manifest["spec"],
+                   preds_file=manifest["preds_file"] and located(manifest["preds_file"]),
+                   spec=manifest["spec"],
                    provenance={"kind": "saved_cvat_recheck", "seed": seed,
                                "parent_queue_sha256": manifest["queue_sha256"],
                                "image_id": snapshot["image_id"],

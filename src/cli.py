@@ -76,6 +76,14 @@ def cmd_evaluate(args) -> int:
     return 0
 
 
+def cmd_manual_sample(args) -> int:
+    from src.eval.manual_sample import sample
+
+    files = sample(args.queue, args.out, args.name, n_random=args.n_random, n_top=args.n_top, seed=args.seed)
+    print(f"phát cho người kiểm -> {files['list']}\nđáp án nhóm (chỉ mở khi đối chiếu) -> {files['key']}")
+    return 0
+
+
 def cmd_detect(args) -> int:
     from src.features.detector import run_detector
 
@@ -379,6 +387,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--device", help="cuda/cpu; mặc định tự chọn")
     p.add_argument("--limit", type=int, help="chỉ chạy N ảnh đầu (thử nhanh)")
     p.set_defaults(fn=cmd_detect)
+
+    p = sub.add_parser("manual-sample", help="chọn mẫu kiểm tay: ngẫu nhiên + đầu hàng đợi (nhãn gốc)")
+    p.add_argument("--queue", type=Path, required=True, help="queue chấm trên nhãn gốc")
+    p.add_argument("--name", default="manual-check-v1")
+    p.add_argument("--out", type=Path, default=Path("data/manual_check"))
+    p.add_argument("--n-random", type=int, default=75)
+    p.add_argument("--n-top", type=int, default=75)
+    p.add_argument("--seed", type=int, default=42)
+    p.set_defaults(fn=cmd_manual_sample)
 
     p = sub.add_parser("check", help="kiểm file đúng quy ước")
     p.add_argument("--preds", type=Path)
