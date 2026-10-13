@@ -1,0 +1,9 @@
+# Chỉ bật các tín hiệu đã triển khai. --signals để chỉ định cấu hình thí nghiệm khác.
+signals: [hard_condition, crowded, many_tiny, rare_class, edge_no_trunc]
+signal_options:
+  crowded: {pct_low: 75, pct_high: 99}
+  many_tiny: {max_h: 20, min_count: 3, saturate: 10}
+  rare_class: {max_share: 0.01}
+  edge_no_trunc: {margin: 2.0, saturate: 2}
+detector_options: {}
+# --preds sẽ yêu cầu đủ 4 tín hiệu của Sơn; chưa triển khai thì dừng, không giả kết quả.

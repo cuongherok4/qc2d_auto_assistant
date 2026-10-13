@@ -2,7 +2,7 @@
 
 load      đọc nhãn BDD100K, tạo cache parquet           (bước 1)
 inject    tiêm lỗi có đáp án                            (bước 2)
-rank      tính tín hiệu + chấm điểm rule -> hàng đợi     (bước 3–4)
+rank      tín hiệu + rule -> hàng đợi + evidence     (bước 3–4)
 evaluate  đo hàng đợi trên đáp án, ghi results.jsonl     (bước 7)
 check     kiểm file preds/queue đúng quy ước
 samples   tạo file mẫu đúng quy ước để code khi chưa có dữ liệu thật
@@ -43,34 +43,35 @@ def cmd_inject(args) -> int:
 
 
 def cmd_rank(args) -> int:
+    from src import pipeline
     from src.data import bdd100k
-    from src.features import geometric, simple_signals
-    from src.scoring import rule
 
     labels = args.labels or config.path("injected_dir") / "det_val_injected.json"
-    objects, images = bdd100k.load(labels)
-    signals = {}
-    for name, fn in {**geometric.SIGNALS, **simple_signals.SIGNALS}.items():
-        try:
-            signals[name] = fn(objects, images)
-        except NotImplementedError as e:
-            print(f"bỏ qua {name}: {e}", file=sys.stderr)
-    w = config.load("weights")
-    queue = rule.rank(signals, w["signals"], args.version, w.get("top_reasons", 3))
-    out = config.path("reports_dir") / f"ranked_queue_{args.version}.csv"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    queue.to_csv(out, index=False)
-    print(f"{len(queue)} ảnh, dùng {len(signals)} tín hiệu -> {out}")
+    spec = pipeline.load_spec(args.spec) if args.spec else None
+    manifest = pipeline.publish(
+        bdd100k.read_frames(labels), args.out or config.path("reports_dir"), args.version,
+        names=args.signals, preds_file=args.preds, spec=spec,
+        provenance={"kind": "cli_rank", "labels_file": str(Path(labels).resolve()),
+                    "labels_sha256": pipeline.sha256(labels)},
+    )
+    print(f"{manifest['n_images']} ảnh, tín hiệu {', '.join(manifest['used_signals'])}"
+          f" -> {manifest['queue_file']}\nevidence -> {manifest['evidence_file']}")
     return 0
 
 
 def cmd_evaluate(args) -> int:
     from src.eval import evaluate
 
-    answer = json.loads((config.path("injected_dir") / "injected_errors.json").read_text(encoding="utf-8"))
-    result = evaluate.evaluate(pd.read_csv(args.queue), answer, args.split)
+    answer_file = args.answer or config.path("injected_dir") / "injected_errors.json"
+    answer = json.loads(Path(answer_file).read_text(encoding="utf-8"))
+    queue = pd.read_csv(args.queue, dtype={"image_id": str, "model_version": str}).fillna({"top_reasons": ""})
+    out = args.out or config.path("reports_dir") / f"eval_{queue.model_version.iloc[0]}_{args.split}"
+    result = evaluate.comparison(queue, answer, out, split=args.split, top_frac=args.top_frac)
+    result["queue_file"] = str(Path(args.queue).resolve())
     evaluate.append_result(result, config.path("reports_dir") / "results.jsonl")
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    keys = ("recall20_img", "recall20_weighted", "precision20", "ndcg", "time_saved")
+    print(pd.read_csv(out / "comparison.csv")[["method", *keys]].to_string(index=False))
+    print(f"chi tiết -> {out}; dòng mới trong reports/results.jsonl")
     return 0
 
 
@@ -338,14 +339,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--labels", type=Path)
     p.set_defaults(fn=cmd_inject)
 
-    p = sub.add_parser("rank", help="tín hiệu + chấm điểm rule -> reports/ranked_queue_<version>.csv")
+    p = sub.add_parser("rank", help="tín hiệu + rule -> ranked_queue, evidence, manifest (không ghi đè)")
     p.add_argument("--labels", type=Path, help="mặc định: nhãn đã tiêm lỗi")
     p.add_argument("--version", default="rule-v0")
+    p.add_argument("--signals", nargs="+", help="mặc định: configs/pipeline.yaml signals")
+    p.add_argument("--preds", type=Path, help="yolo_preds.parquet; bật 4 tín hiệu detector")
+    p.add_argument("--spec", type=Path, help="spec guideline ĐÃ DUYỆT; bật tín hiệu guideline")
+    p.add_argument("--out", type=Path, help="mặc định: reports/")
     p.set_defaults(fn=cmd_rank)
 
-    p = sub.add_parser("evaluate", help="đo hàng đợi, ghi reports/results.jsonl")
+    p = sub.add_parser("evaluate", help="đo hàng đợi vs file order/random, gain curve, ghi results.jsonl")
     p.add_argument("--queue", type=Path, required=True)
+    p.add_argument("--answer", type=Path, help="mặc định: data/injected/injected_errors.json")
     p.add_argument("--split", default="test", choices=["train", "val", "test"])
+    p.add_argument("--top-frac", type=float, default=0.2)
+    p.add_argument("--out", type=Path, help="mặc định: reports/eval_<version>_<split>/")
     p.set_defaults(fn=cmd_evaluate)
 
     p = sub.add_parser("check", help="kiểm file đúng quy ước")

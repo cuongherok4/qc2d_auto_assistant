@@ -27,15 +27,15 @@ def hard_condition(objects: pd.DataFrame, images: pd.DataFrame, cfg: dict | None
 
 
 def size_outlier(objects, images, cfg=None) -> Signals:
-    raise NotImplementedError("TODO(Cường): z-score robust log diện tích/tỉ lệ theo class")
+    raise NotImplementedError("TODO(Tú Anh): z-score robust log diện tích/tỉ lệ theo class")
 
 
 def dup_same_class(objects, images, cfg=None) -> Signals:
-    raise NotImplementedError("TODO(Cường): hai box cùng class IoU > 0.5")
+    raise NotImplementedError("TODO(Tú Anh): hai box cùng class IoU > 0.5")
 
 
 def overlap_cross_class(objects, images, cfg=None) -> Signals:
-    raise NotImplementedError("TODO(Cường): hai box khác class IoU > 0.7, trừ rider–bicycle/motorcycle")
+    raise NotImplementedError("TODO(Tú Anh): hai box khác class IoU > 0.7, trừ rider–bicycle/motorcycle")
 
 
 SIGNALS = {
