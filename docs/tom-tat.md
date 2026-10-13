@@ -1,5 +1,7 @@
 # M13 Reviewer Prioritization: tóm tắt dự án
 
+> Đây là bản bối cảnh ngày 11/10. Hiện trạng, lịch và phân công đã được phân tích lại tại [bản cập nhật 13/10/2026](phan-tich-va-phan-cong-13-10.md), kèm 4 sơ đồ hệ thống và phần Tú Anh/Long đã viết trên các nhánh riêng.
+
 Cập nhật: 11/10/2026. Bối cảnh, hiện trạng, các quyết định đã bàn và việc còn phải chốt của dự án.
 
 ---

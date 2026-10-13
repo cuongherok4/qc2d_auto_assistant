@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1152pt" height="720pt" viewBox="0 0 1152 720" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-13T09:20:48.244950</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 720 
+L 1152 720 
+L 1152 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 406.8 210.24 
+L 745.2 210.24 
+Q 753.84 210.24 753.84 201.6 
+L 753.84 144.72 
+Q 753.84 136.08 745.2 136.08 
+L 406.8 136.08 
+Q 398.16 136.08 398.16 144.72 
+L 398.16 201.6 
+Q 398.16 210.24 406.8 210.24 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #fff3dc; stroke: #ad710d; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 576 211.801465 
+Q 576 226.80025 576 240.121984 
+" clip-path="url(#pcbce8a0637)" style="fill: none; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+    <path d="M 579 234.121984 
+L 576 240.121984 
+L 573 234.121984 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #50677c; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 46.8 375.84 
+L 320.4 375.84 
+Q 329.04 375.84 329.04 367.2 
+L 329.04 252 
+Q 329.04 243.36 320.4 243.36 
+L 46.8 243.36 
+Q 38.16 243.36 38.16 252 
+L 38.16 367.2 
+Q 38.16 375.84 46.8 375.84 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #eef3f7; stroke: #647b91; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 439.2 375.84 
+L 712.8 375.84 
+Q 721.44 375.84 721.44 367.2 
+L 721.44 252 
+Q 721.44 243.36 712.8 243.36 
+L 439.2 243.36 
+Q 430.56 243.36 430.56 252 
+L 430.56 367.2 
+Q 430.56 375.84 439.2 375.84 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #eaf1ff; stroke: #356ad2; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 831.6 375.84 
+L 1105.2 375.84 
+Q 1113.84 375.84 1113.84 367.2 
+L 1113.84 252 
+Q 1113.84 243.36 1105.2 243.36 
+L 831.6 243.36 
+Q 822.96 243.36 822.96 252 
+L 822.96 367.2 
+Q 822.96 375.84 831.6 375.84 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #eaf1ff; stroke: #356ad2; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 330.598059 309.6 
+Q 379.799724 309.6 427.324338 309.6 
+" clip-path="url(#pcbce8a0637)" style="fill: none; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+    <path d="M 421.324338 306.6 
+L 427.324338 309.6 
+L 421.324338 312.6 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #50677c; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 722.998059 309.6 
+Q 772.199724 309.6 819.724338 309.6 
+" clip-path="url(#pcbce8a0637)" style="fill: none; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+    <path d="M 813.724338 306.6 
+L 819.724338 309.6 
+L 813.724338 312.6 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #50677c; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 831.6 573.84 
+L 1105.2 573.84 
+Q 1113.84 573.84 1113.84 565.2 
+L 1113.84 439.2 
+Q 1113.84 430.56 1105.2 430.56 
+L 831.6 430.56 
+Q 822.96 430.56 822.96 439.2 
+L 822.96 565.2 
+Q 822.96 573.84 831.6 573.84 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #f2ebff; stroke: #8051be; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 439.2 573.84 
+L 712.8 573.84 
+Q 721.44 573.84 721.44 565.2 
+L 721.44 439.2 
+Q 721.44 430.56 712.8 430.56 
+L 439.2 430.56 
+Q 430.56 430.56 430.56 439.2 
+L 430.56 565.2 
+Q 430.56 573.84 439.2 573.84 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #f2ebff; stroke: #8051be; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 46.8 573.84 
+L 320.4 573.84 
+Q 329.04 573.84 329.04 565.2 
+L 329.04 439.2 
+Q 329.04 430.56 320.4 430.56 
+L 46.8 430.56 
+Q 38.16 430.56 38.16 439.2 
+L 38.16 565.2 
+Q 38.16 573.84 46.8 573.84 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #fff3dc; stroke: #ad710d; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 968.4 377.398828 
+Q 968.4 403.198082 968.4 427.320284 
+" clip-path="url(#pcbce8a0637)" style="fill: none; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+    <path d="M 971.4 421.320284 
+L 968.4 427.320284 
+L 965.4 421.320284 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #50677c; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 821.401941 504 
+Q 772.200276 504 724.675662 504 
+" clip-path="url(#pcbce8a0637)" style="fill: none; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+    <path d="M 730.675662 507 
+L 724.675662 504 
+L 730.675662 501 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #50677c; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 429.001941 504 
+Q 379.800276 504 332.275662 504 
+" clip-path="url(#pcbce8a0637)" style="fill: none; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+    <path d="M 338.275662 507 
+L 332.275662 504 
+L 338.275662 501 
+z
+" clip-path="url(#pcbce8a0637)" style="fill: #50677c; stroke: #50677c; stroke-width: 1.5; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 39.6 118.08 
+L 1112.4 118.08 
+" clip-path="url(#pcbce8a0637)" style="fill: none; stroke: #dbe4ec; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #356ad2" x="39.6" y="32.4" transform="rotate(-0 39.6 32.4)">M13  /  01</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 26px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="39.6" y="69.12" transform="rotate(-0 39.6 69.12)">Từ nhãn cần QC đến quyết định của reviewer</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 12.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #50677c" x="39.6" y="100.08" transform="rotate(-0 39.6 100.08)">Luồng sử dụng thực tế · Không tiêm lỗi vào nhãn của batch đang review</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #50677c" x="39.6" y="698.4" transform="rotate(-0 39.6 698.4)">NHÓM M13 · 13/10/2026</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #50677c" x="1112.4" y="698.4" transform="rotate(-0 1112.4 698.4)">Kiến trúc / phân công đề xuất · Hiện trạng chi tiết trong bản phân tích</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="412.56" y="177.6775" transform="rotate(-0 412.56 177.6775)">Guideline → spec đã duyệt</text>
+   </g>
+   <g id="text_7">
+    <g id="patch_15">
+     <path d="M 609.544453 234.204961 
+L 712.375547 234.204961 
+L 712.375547 217.955039 
+L 609.544453 217.955039 
+z
+" style="fill: #ffffff"/>
+    </g>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #50677c" x="660.96" y="229.582383" transform="rotate(-0 660.96 229.582383)">quy tắc của batch</text>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #647b91" x="52.56" y="266.4" transform="rotate(-0 52.56 266.4)">ĐẦU VÀO</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="52.56" y="306.905" transform="rotate(-0 52.56 306.905)">01  Batch cần kiểm</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(52.56 339.619531)">Ảnh + nhãn bounding box</text>
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(52.56 360.30125)">Giữ nguyên nhãn đầu vào</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #356ad2" x="444.96" y="266.4" transform="rotate(-0 444.96 266.4)">BỘ MÁY QC</text>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="444.96" y="305.8125" transform="rotate(-0 444.96 305.8125)">02  Tính rủi ro</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(444.96 338.447031)">Hình học + detector + luật</text>
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(444.96 360.673125)">Chưa kết luận là lỗi</text>
+   </g>
+   <g id="text_14">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #356ad2" x="837.36" y="266.4" transform="rotate(-0 837.36 266.4)">HÀNG ĐỢI + BẰNG CHỨNG</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="837.36" y="306.28" transform="rotate(-0 837.36 306.28)">03  Xếp thứ tự xem</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(837.36 338.709531)">Điểm + tối đa 3 lý do</text>
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(837.36 360.409531)">Box nghi vấn để đối chiếu</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #8051be" x="837.36" y="453.6" transform="rotate(-0 837.36 453.6)">API + EXTENSION ĐÃ CÓ CODE</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="837.36" y="492.3175" transform="rotate(-0 837.36 492.3175)">04  Người review</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(837.36 525.544219)">Mở đúng frame trong CVAT</text>
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(837.36 547.699219)">Lỗi thật / Bot nhầm / Bỏ qua</text>
+   </g>
+   <g id="text_20">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #8051be" x="444.96" y="453.6" transform="rotate(-0 444.96 453.6)">SQLITE ĐÃ CÓ CODE</text>
+   </g>
+   <g id="text_21">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="444.96" y="493.48" transform="rotate(-0 444.96 493.48)">05  Lưu dấu vết</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(444.96 525.473125)">Verdict + người + thời gian</text>
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(444.96 547.713438)">Gắn phiên bản hàng đợi</text>
+   </g>
+   <g id="text_23">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #ad710d" x="52.56" y="453.6" transform="rotate(-0 52.56 453.6)">CƯỜNG + LONG</text>
+   </g>
+   <g id="text_24">
+    <text style="font-weight: 700; font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #172c43" x="52.56" y="493.0125" transform="rotate(-0 52.56 493.0125)">06  Đo hiệu quả</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(52.56 527.355469)">Tìm lỗi sớm hơn bao nhiêu?</text>
+    <text style="font-size: 14px; font-family: 'DejaVu Sans'; fill: #172c43" transform="translate(52.56 547.244219)">Hiệu quả ở cùng thời gian?</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; fill: #50677c" transform="translate(43.2 632.311875)">Tú Anh đã viết phần review, lưu vết và công cụ guideline. Việc tiếp theo: ghép với kết quả QC thật.</text>
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; fill: #50677c" transform="translate(43.2 653.212422)">Sau sửa nhãn và Save: có thể yêu cầu chấm lại khi Cường nối xong backend recheck.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pcbce8a0637">
+   <rect x="0" y="0" width="1152" height="720"/>
+  </clipPath>
+ </defs>
+</svg>

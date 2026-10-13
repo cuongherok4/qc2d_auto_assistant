@@ -1,24 +1,43 @@
 # Quy trình làm việc của team M13
 
+> **Cập nhật 13/10/2026:** xem [phân tích và phân công mới](docs/phan-tich-va-phan-cong-13-10.md) trước khi nhận việc. Phần hiện trạng/lịch ở mục 1–2 bên dưới là kế hoạch ngày 12/10; Tú Anh đã có API, CVAT, extension, guideline tools và công cụ demo/pilot trên nhánh riêng; Long đã có 4 tín hiệu, load spec và R1. Không dùng TODO ở nhánh base để kết luận các phần này chưa được viết. Giữ các quy ước làm việc bên dưới; dùng bản cập nhật để xác định việc còn lại.
+
 Đọc file này trước khi viết dòng code đầu tiên. Mục tiêu: 4 người làm song song, không ai chờ ai, ghép code không conflict.
 
 ## 1. Luồng hệ thống và ai làm gì
 
 ```
- [1] Dữ liệu ──▶ [2] Tiêm lỗi ──▶ [3] Tín hiệu ──▶ [4] Chấm điểm ──▶ [5] Hàng đợi ──▶ [6] Reviewer ──▶ [7] Đánh giá
-  bdd100k.py      inject.py        3a geometric +    rule.py            api/main.py      extension/       evaluate.py
-                                      simple_signals gbm.py             cvat_sync.py     (CVAT local)     metrics.py
-                                   3b detector +
-                                      model_disagreement
-                                   3c guideline_rules ◀── [0] guideline/extract.py
+ guideline của job ─▶ LLM đọc ─▶ spec YAML (mỗi luật có câu trích + trang) ─▶ NGƯỜI DUYỆT
+   src/guideline/extract.py                                                     │
+                                                                                ▼
+ [1] Dữ liệu ─▶ [2] Tiêm lỗi ─▶ [3] Tín hiệu, chạy 100% ảnh ───────────────────────────────┐
+  bdd100k.py     inject.py       3a hình học: geometric.py + simple_signals.py              │
+                                 3b detector so với nhãn: detector.py + model_disagreement  │
+                                 3c luật theo spec: guideline_rules.py                       │
+                                                                                            ▼
+ [4] Chấm điểm (rule.py, gbm.py) ─▶ ranked_queue + evidence ─▶ 3d VLM xem lại top 30% (vlm_check.py)
+                                                                                            │
+ [7] Đánh giá ◀── verdict ◀── [6] Reviewer bấm trong CVAT ◀── [5] API + extension ◀──── hàng đợi cuối
+  evaluate.py                      extension/                   api/
 ```
+
+Rule và VLM chỉ kiểm được box **đã có**. Object bị bỏ sót chỉ detector bắt được, nên 3b chạy song song với 3c chứ không thay thế. Kết quả VLM là một tín hiệu cộng vào điểm, quyết định cuối cùng vẫn là reviewer.
+
+**Bốn file ghép nối.** Chưa có file thật thì chạy `python -m src.cli samples` để có file mẫu đúng định dạng mà code trước:
+
+| File | Ai làm ra | Ai dùng |
+|---|---|---|
+| `data/yolo_preds.parquet` | Sơn | Sơn (bất đồng), Long (R4), Tú Anh (vẽ box) |
+| `reports/ranked_queue_*.csv` | Cường | Tú Anh (API), Cường (VLM, đánh giá), Long (kiểm tay) |
+| file evidence | Cường | Tú Anh (side panel) |
+| `data/cvat_map.parquet` | Tú Anh (mỗi máy tự sinh) | API, extension |
 
 | Người | Việc | Chỉ sửa trong |
 |---|---|---|
-| **Cường** (lead) | Tiêm lỗi; 3 tín hiệu hình học khó (`size_outlier`, `dup_same_class`, `overlap_cross_class`); chấm điểm + file evidence; GBM, học lại; đánh giá; CLI, config; review + merge PR | `src/data/inject.py`, `src/features/geometric.py`, `src/scoring/`, `src/eval/`, `src/cli.py`, `configs/` (trừ `configs/guidelines/`) |
-| **Sơn** | Tải BDD100K, chia qua Drive; chạy detector; 4 tín hiệu bất đồng; công cụ vẽ box cho kiểm tay; VLM (Mốc 4) | `src/features/detector.py`, `src/features/model_disagreement.py`, `src/features/vlm_check.py`, `src/viz/` |
-| **Tú Anh** | CVAT local + `cvat-sync`; API (`/verdict`, `/image`, `/stats`), lưu verdict SQLite; Chrome extension; chạy pilot | `src/api/`, `extension/` |
-| **Long** | 4 tín hiệu hình học dễ (`crowded`, `many_tiny`, `rare_class`, `edge_no_trunc`); LLM đọc guideline; rule engine; kiểm tay (kappa); báo cáo | `src/features/simple_signals.py`, `src/guideline/`, `src/features/guideline_rules.py`, `configs/guidelines/` |
+| **Cường** (lead) | Phần khó: tiêm lỗi; chấm điểm + file evidence; đánh giá; GBM; **VLM (Qwen2.5-VL chạy local trên GPU)**; CLI, config; review + merge PR; dẫn video | `src/data/inject.py`, `src/scoring/`, `src/eval/`, `src/features/vlm_check.py`, `src/cli.py`, `configs/` (trừ `configs/guidelines/`) |
+| **Sơn** | Tải BDD100K, chia qua Drive; chạy detector; 4 tín hiệu bất đồng (lọc dự đoán theo spec); kiểm tay cùng Long | `src/features/detector.py`, `src/features/model_disagreement.py` |
+| **Tú Anh** | CVAT local + `cvat-sync`; API, SQLite; Chrome extension; **3 tín hiệu hình học** (`size_outlier`, `dup_same_class`, `overlap_cross_class`, dùng hàm có sẵn trong `geometry.py`); **công cụ vẽ box cho kiểm tay**; pilot; dựng máy demo | `src/api/`, `extension/`, `src/features/geometric.py`, `src/viz/` |
+| **Long** | 4 tín hiệu hình học dễ (`crowded`, `many_tiny`, `rare_class`, `edge_no_trunc`); **nhận lại phần LLM đọc guideline Tú Anh đã viết**; viết 2 guideline biến thể; rule engine; kiểm tay (kappa); báo cáo | `src/features/simple_signals.py`, `src/guideline/`, `src/features/guideline_rules.py`, `configs/guidelines/` |
 
 CVAT chạy local trên từng máy, nên id task/job/frame khác nhau giữa các máy. Mỗi máy tự sinh bảng ánh xạ bằng `python -m src.cli cvat-sync` (lưu trong `data/`, không commit). Chỉ cần nạp vào CVAT các ảnh có trong hàng đợi, không cần đủ 10k ảnh.
 
@@ -30,29 +49,27 @@ Việc của mỗi người đã có sẵn chỗ trong code: tìm `TODO(<tên m�
 grep -rn "TODO(Sơn)" src/ extension/
 ```
 
-## 2. Thứ tự làm
+## 2. Lịch 4 ngày (cập nhật 12/10)
 
-Việc gỡ chặn cho người khác làm trước; việc chạy lâu bắt đầu sớm và chạy nền.
+3 ngày code (13–15/10), ngày 16/10 deploy và quay video. **20:00 ngày 15/10 đóng băng code**, sau giờ đó chỉ sửa lỗi chặn demo.
 
-**Sáng 12/10, làm đầu tiên:**
-
-1. **Sơn:** tải BDD100K, chia qua Drive. Có dữ liệu thì cho detector chạy nền trên 10k ảnh ngay.
-2. **Mọi người:** chưa có dữ liệu thật thì chạy `python -m src.cli samples` để có file mẫu đúng quy ước mà code trước.
-
-| Mốc | Cường | Sơn | Tú Anh | Long |
+| Ngày | Cường | Sơn | Tú Anh | Long |
 |---|---|---|---|---|
-| **1** (12–13/10) | Tiêm lỗi → 3 tín hiệu khó → đánh giá + gain curve | `detector.py` ra `yolo_preds.parquet` | Dựng CVAT local → `/verdict` + SQLite trên file mẫu → `cvat-sync` | 4 tín hiệu dễ → spec `bdd-default` + `load_spec` |
-| **2** (14–15/10) | Hàng đợi rule + detector → file evidence | 4 tín hiệu bất đồng | Side panel hiển thị hàng đợi thật, mở đúng frame | Rule R1–R3 → LLM đọc guideline → R4 (sau khi Sơn xong khớp box) → kiểm tay nửa ngẫu nhiên |
-| **3** (16–18/10) | GBM → mô phỏng học lại → bảng 5 phương pháp | Công cụ vẽ box cho kiểm tay → chuẩn bị VLM | `/stats`, ảnh audit, hoàn thiện extension | Kiểm tay nửa top hàng đợi, đo kappa |
-| **4** (19–21/10) | Hỗ trợ, review | VLM xem lại top 30% (cắt nếu trễ) | Sửa lỗi giao diện | LLM viết báo cáo batch |
-| **5** (22–23/10) | Pilot | Pilot | Chạy hệ thống cho pilot | Đo thời gian pilot |
-| **6** (24–25/10) | README, video demo | Hỗ trợ | Hỗ trợ | Báo cáo cuối |
+| **13/10**: có hàng đợi đầu tiên | `inject.py` → `rule.py` + evidence → `rank` ra `ranked_queue_rule-v0` trên dữ liệu thật → recall@20% so với random. Detector chậm thì cho chạy trên GPU của mình | Sáng cho detector chạy nền 10k ảnh → **`yolo_preds.parquet` lên Drive trước 18:00** → tín hiệu thiếu box, sai class | Sửa 4 lỗi nặng trong review → tách nhánh guideline ra → **PR API + extension trước 12:00** → **3 tín hiệu hình học, PR trước 18:00** (Cường cần để ra `rule-v0`) | 4 tín hiệu dễ (PR trước 12:00) → nhận code guideline của Tú Anh, đọc cùng Tú Anh 30 phút → viết 2 guideline biến thể (VD ngưỡng 30px + gộp truck/bus; bỏ traffic sign) |
+| **14/10**: đủ tín hiệu | Ghép tín hiệu Sơn + Long → hàng đợi `rule-det-v1` → gain curve → `vlm_check.py`: Qwen2.5-VL chạy top 30% của `rule-v0` (chạy nền) → GBM một lần (train trên đáp án tiêm, val riêng) | 2 tín hiệu bất đồng còn lại + lọc dự đoán theo spec | `viz/draw.py` cho kiểm tay (sáng, Long cần) → side panel nạp hàng đợi thật, `cvat-sync` 300 ảnh top → lỗi nhóm B | LLM đọc 3 guideline → spec → duyệt → `guideline_rules` R1–R4 → kiểm tay 50 ảnh ngẫu nhiên |
+| **15/10**: chốt số | Hàng đợi cuối (rule + detector + guideline + VLM) → bảng so sánh phương pháp → merge hết vào `develop` → `main` | Kiểm tay 50 ảnh top hàng đợi cùng Long (2 người → kappa) → chạy lại toàn pipeline trên máy GPU | Pilot nhỏ: 2 người, 30 ảnh theo hàng đợi + 30 ảnh theo thứ tự file, đo thời gian → lỗi nhóm C → script dựng demo 1 lệnh | Kiểm tay 50 ảnh top + kappa → viết báo cáo (số do Cường đưa) |
+| **16/10**: deploy, video | Sáng: chạy thử kịch bản video. Chiều: quay video 3–5 phút (bài toán → guideline → spec → hàng đợi → review trong CVAT → số liệu), README | Hỗ trợ dựng máy demo, chuẩn bị số/ảnh cho video | Sáng: dựng máy demo từ `main` sạch theo README (CVAT + API + extension). Chiều: thao tác demo khi quay | Chốt báo cáo + slide |
+
+**Đã cắt để vừa 3 ngày:** vòng học lại online (chỉ train GBM một lần, học lại ghi là hướng phát triển); kiểm tay còn 150 ảnh thay vì 500; VLM chỉ chạy top 30%. Trưa 15/10 nếu VLM không tăng recall thì bỏ khỏi hàng đợi cuối, chỉ giữ để demo.
 
 **Phụ thuộc cần theo dõi:**
 
-- Tối 12/10 chưa có `yolo_preds.parquet` thì Mốc 2 trễ: Sơn báo tiến độ chạy detector ngay trong báo cáo 22:30.
-- Rule R4 của Long cần phần khớp box của Sơn; kiểm tay nửa top cần hàng đợi của Cường.
+- Cường giữ đường găng (tiêm lỗi → hàng đợi → đánh giá). VLM và GBM là việc cắt đầu tiên nếu Cường trễ.
+- 18:00 ngày 13/10 chưa có `yolo_preds.parquet` thì Sơn báo ngay, Cường cho chạy detector trên máy GPU của mình.
+- Tối 13/10 Cường phải có `ranked_queue_rule-v0`: Tú Anh (side panel) và Long (kiểm tay top) cần nó sáng 14/10.
+- Rule R4 của Long cần phần khớp box của Sơn.
 - Cường review PR 2 lần mỗi ngày, lúc 12:00 và 21:00, để không ai chờ merge quá nửa ngày.
+- Báo cáo 22:30 mỗi tối theo mẫu, ghi rõ đang chặn ai / bị ai chặn.
 
 ## 3. Ba quy ước ghép code
 

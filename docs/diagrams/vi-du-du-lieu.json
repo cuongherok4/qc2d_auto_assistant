@@ -1,0 +1,72 @@
+{
+  "purpose": "illustration_only_not_model_output",
+  "image_id": "street_017",
+  "image_size": [
+    1280,
+    720
+  ],
+  "objects": {
+    "A": {
+      "box": [
+        120,
+        390,
+        360,
+        510
+      ],
+      "label": "car",
+      "prediction": "car",
+      "conf": 0.95
+    },
+    "B": {
+      "box": [
+        720,
+        400,
+        900,
+        460
+      ],
+      "label": null,
+      "prediction": "car",
+      "conf": 0.91
+    },
+    "C": {
+      "box": [
+        570,
+        350,
+        606,
+        368
+      ],
+      "label": "car",
+      "prediction": "car",
+      "conf": 0.88
+    },
+    "D": {
+      "box": [
+        990,
+        380,
+        1020,
+        470
+      ],
+      "label": "car",
+      "prediction": "pedestrian",
+      "conf": 0.93
+    }
+  },
+  "illustrative_signals": [
+    {
+      "name": "Thiếu box B",
+      "value": 0.9,
+      "weight": 1.5
+    },
+    {
+      "name": "Sai class D",
+      "value": 0.8,
+      "weight": 1.2
+    },
+    {
+      "name": "Vi phạm R1 ở C",
+      "value": 0.6,
+      "weight": 1.0
+    }
+  ],
+  "risk_score": 78.65
+}
