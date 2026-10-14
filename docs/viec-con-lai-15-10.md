@@ -42,8 +42,9 @@ Chi tiết ở [tien-do.md](tien-do.md).
 
 **Lượt 2 (chiều)**
 
-2. **Kiểm tay 150 ảnh** theo phiếu Long gửi, độc lập với Long. Không xem `manual-check-v1.key.json`, không trao đổi
-   với Long trước khi cả hai xong. Dùng `src/viz/draw.py` để vẽ box. Nộp phiếu qua Drive.
+2. **Kiểm tay 75 ảnh** trong `manual-check-v1.son.csv`, tự tay chấm vào `phieu-son.csv` (cả hai file trên Drive, sinh
+   14/10). Phiếu do AI chấm không dùng được. Theo tiêu chí trong `docs/huong-dan-kiem-tay.md` của Long. Không xem
+   `manual-check-v1.key.json`. Dùng `src/viz/draw.py` để vẽ box. Nộp phiếu qua Drive.
 3. Nếu còn thời gian thì hỗ trợ Long làm R4 (box bị bỏ sót, dựa trên kết quả ghép với detector).
 
 ## Tú Anh · review & pilot
@@ -96,8 +97,9 @@ Hướng dẫn chi tiết: [huong-dan-long-15-10.html](huong-dan-long-15-10.html
    sau đó `guideline approve`.
    - Chạy thử `python -m src.cli rank --version rule-v1.4-spec --spec <spec đã duyệt> --preds data/yolo_preds.parquet --signals` và `evaluate`.
      Ghi số vào PR.
-5. **Kiểm tay 150 ảnh**, độc lập với Sơn. Xong cả hai mới đối chiếu: tính kappa trên có lỗi/không lỗi, để riêng các ảnh
-   "không chắc".
+5. **Kiểm tay 75 ảnh** trong `manual-check-v1.long.csv`, chấm vào `phieu-long.csv` (Drive). Hai người chia đôi 150 ảnh,
+   không có ảnh chung nên **không tính kappa**; báo cáo ghi rõ mỗi ảnh chỉ một người kiểm. Gộp hai phiếu rồi mới mở
+   `key.json` để tách tỉ lệ lỗi theo nhóm ngẫu nhiên / đầu hàng đợi, để riêng các ảnh "không chắc".
 6. Khung báo cáo: mục lục và chỗ điền số. Số lấy từ `reports/results.jsonl` và kết quả kiểm tay, không tự ghi số.
 7. R4 cùng Sơn chỉ làm khi 1–6 đã xong.
 

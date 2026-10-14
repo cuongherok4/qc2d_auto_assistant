@@ -75,7 +75,7 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 - [x] Đọc lại `src/features/detector.py`, `model_disagreement.py`: tìm ra 2 lỗi (box lệch nhiều, capo xe mình)
 - [x] Vẽ box để kiểm tay (`src/viz/draw.py`, đã merge 13/10)
 - [ ] **Sửa 2 lỗi detector, PR `feat/son-fix-disagreement`, chạy `rule-v1.3`** ← việc tiếp theo
-- [ ] Kiểm tay 150 ảnh, độc lập với Long
+- [ ] Kiểm tay 75 ảnh (`manual-check-v1.son.csv`)
 - [ ] Hỗ trợ Long viết R4 (dùng kết quả so khớp detector)
 
 ### Long · guideline & chất lượng — 2/9
@@ -87,7 +87,7 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 - [ ] Duyệt spec (`approved_by`) để `rank --spec` chạy được
 - [ ] R4 (cùng Sơn)
 - [ ] Phiếu kiểm tay + cách lấy mẫu kiểm phần cuối hàng đợi
-- [ ] Kiểm tay 150 ảnh, độc lập với Sơn; tính kappa
+- [ ] Kiểm tay 75 ảnh (`manual-check-v1.long.csv`); gộp hai phiếu
 - [ ] Báo cáo
 
 ## Mốc
@@ -102,6 +102,11 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 ## Kiểm tay 150 ảnh
 
 Danh sách: `data/manual_check/manual-check-v1.csv` (lấy qua Drive; **sinh lại 14/10 trên nhãn 2018**, 131/150 ảnh trùng danh sách cũ, ai đã tải bản 13/10 thì tải lại). 75 ảnh ngẫu nhiên + 75 ảnh đầu hàng đợi `rule-v1.2-goc` (chấm trên **nhãn gốc**, không phải nhãn đã tiêm), đã trộn thứ tự, seed 42. Người kiểm **không** mở `manual-check-v1.key.json` (ghi ảnh nào thuộc nhóm nào) cho đến khi đối chiếu, để không bị thiên lệch. Sinh lại: `python -m src.cli manual-sample --queue reports/ranked_queue_rule-v1.2-goc.csv`.
+
+**Chia việc (chốt 14/10):** Long và Sơn mỗi người kiểm 75 ảnh, không trùng nhau: `manual-check-v1.long.csv`
+(38 ngẫu nhiên + 37 đầu hàng đợi) và `manual-check-v1.son.csv` (37 + 38), chia xen kẽ trong từng nhóm theo
+`check_order`. Phiếu trống `phieu-long.csv`, `phieu-son.csv` gửi kèm qua Drive. Không có ảnh chung nên không đo
+kappa: báo cáo ghi mỗi ảnh chỉ một người kiểm.
 
 ## Dữ liệu chia qua Drive (không có trên git)
 
