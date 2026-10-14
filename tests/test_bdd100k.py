@@ -37,3 +37,25 @@ def test_real_val_has_10k_images():
         pytest.skip("chưa có dữ liệu BDD100K")
     _, images = bdd100k.load(use_cache=False)
     assert len(images) == 10_000
+
+
+def test_has_attribute_columns_tell_missing_from_false():
+    frames = [{"name": "a.jpg", "labels": [
+        {"id": "1", "category": "car", "attributes": {"occluded": False, "truncated": False},
+         "box2d": {"x1": 0, "y1": 0, "x2": 10, "y2": 10}},
+        {"id": "2", "category": "car", "box2d": {"x1": 0, "y1": 0, "x2": 10, "y2": 10}},
+    ]}]
+    objects, _ = bdd100k.to_tables(frames)
+    assert objects["has_occluded"].tolist() == [True, False]
+    assert objects["has_truncated"].tolist() == [True, False]
+    assert objects["occluded"].tolist() == [False, False]
+
+
+def test_load_rebuilds_cache_missing_new_columns(tmp_path, monkeypatch):
+    src = tmp_path / "det_val.json"
+    src.write_text(FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(bdd100k.config, "path", lambda key: tmp_path / "cache")
+    objects, _ = bdd100k.load(src)
+    (tmp_path / "cache" / "det_val_objects.parquet").unlink()
+    objects.drop(columns=["has_occluded"]).to_parquet(tmp_path / "cache" / "det_val_objects.parquet")
+    assert "has_occluded" in bdd100k.load(src)[0].columns
