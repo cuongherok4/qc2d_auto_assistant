@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import inspect
 import io
 import json
 from pathlib import Path
@@ -40,18 +41,48 @@ class RecheckManager:
                     raise TypeError("Backend phải callable")
             except (ImportError, AttributeError, ValueError, TypeError) as exc:
                 self.backend, self.backend_error = None, str(exc)
+        self.uses_manifest = False
+        if self.backend is not None:
+            try:
+                self.uses_manifest = "manifest_file" in inspect.signature(self.backend).parameters
+            except (TypeError, ValueError):
+                pass  # Legacy callables continue to receive the existing adapter arguments.
+
+    def pilot_snapshot(self, queue_id):
+        return any(
+            row.get("purpose") == "human_pilot" and row.get("queue_id") == queue_id
+            for row in self.store.state_items("pilot:").values()
+        )
+
+    def readiness(self, queue_path, batch=None, queue_id=None):
+        if self.backend is None:
+            return False, "Chưa có backend QC cho queue này; điểm chưa thay đổi."
+        if batch is not None:
+            return False, "Batch phụ chưa hỗ trợ kiểm tra lại; cần phục vụ batch như queue chính"
+        if queue_id and self.pilot_snapshot(queue_id):
+            return False, "Queue đang dùng cho pilot; giữ snapshot, chấm lại bằng DB review riêng"
+        if self.uses_manifest and (
+            queue_path is None or not queue_path.with_suffix(".manifest.json").is_file()
+        ):
+            return False, "Queue thiếu manifest từ lệnh rank; chưa thể kiểm tra lại lỗi"
+        return True, "Có thể kiểm tra lại lỗi từ nhãn đã Save."
 
     def capture(self, image_id, batch=None, queue_id=None):
         result = self.saved.capture(image_id, batch, queue_id)
         payload = result.pop("payload")
         result.pop("snapshot_file")
+        _, current_id, queue_path = self.service.snapshot(batch)
+        if current_id != result["queue_id"]:
+            raise HTTPException(409, "Queue đã đổi trong lúc đọc nhãn; tải lại")
+        ready, message = self.readiness(queue_path, batch, current_id)
         return {
             **result,
             "image_id": image_id,
             "annotation_version": payload["annotation_version"],
             "boxes": payload["boxes"],
             "box_count": len(payload["boxes"]),
-            "backend_ready": self.backend is not None and batch is None,
+            "backend_ready": ready,
+            "backend_message": message,
             "source": "CVAT API: nhãn đã Save; không bao gồm thay đổi chưa lưu trên canvas",
         }
 
@@ -80,6 +111,9 @@ class RecheckManager:
             frame, before_id, before_path = self.service.snapshot()
             if before_id != value["queue_id"]:
                 raise HTTPException(409, "Queue đã đổi; tải lại trước khi kiểm tra")
+            ready, message = self.readiness(before_path, queue_id=before_id)
+            if not ready:
+                raise HTTPException(409 if self.pilot_snapshot(before_id) else 503, message)
             captured = self.saved.capture(image_id, queue_id=before_id)
             if captured["snapshot_id"] != value["snapshot_id"]:
                 raise HTTPException(409, "Nhãn CVAT đã đổi; đọc nhãn đã Save lại trước khi kiểm tra")
@@ -100,6 +134,8 @@ class RecheckManager:
                 output_dir=output,
                 model_version=version,
                 seed=self.settings.audit_seed,
+                **({"manifest_file": before_path.with_suffix(".manifest.json")}
+                   if self.uses_manifest else {}),
             )
             paths = {name: Path(result[name]).resolve() for name in ("queue_file", "evidence_file")}
             if any(not path.is_relative_to(output) for path in paths.values()):

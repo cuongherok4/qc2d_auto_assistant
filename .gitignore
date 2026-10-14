@@ -6,6 +6,10 @@
 *.onnx
 *.jpg
 *.png
+!extension/icon16.png
+!extension/icon32.png
+!extension/icon48.png
+!extension/icon128.png
 *.mp4
 guidelines/*.docx
 guidelines/*.pdf

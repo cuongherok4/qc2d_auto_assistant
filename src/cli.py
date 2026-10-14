@@ -315,6 +315,37 @@ def cmd_cvat_import(args) -> int:
     return 0
 
 
+def cmd_review_unpack(args) -> int:
+    from src.api.review_setup import unpack
+
+    print(json.dumps(unpack(args.archive, args.out), ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_review_prepare(args) -> int:
+    from src.api.review_setup import prepare
+
+    cfg = config.load("review_acceptance")
+    version = cfg["pilot_queue_version" if args.pilot else "queue_version"]
+    root = args.bundle or config.ROOT
+    queue = args.queue or root / f"reports/ranked_queue_{version}.csv"
+    original = args.original_labels or root / "data/bdd100k/labels/det_20/det_val.json"
+    limit = cfg["pilot_images"] if args.pilot else args.limit
+    result = prepare(queue, args.images, args.out, source_root=root, limit=limit,
+                     purpose=args.purpose, original_labels=original, cvat_url=args.url,
+                     role="pilot" if args.pilot else "review")
+    print(json.dumps({"folder": str(args.out.resolve()), "images": result["images"],
+                      "version": result["version"], "purpose": result["purpose"]}, indent=2))
+    return 0
+
+
+def cmd_review_connect(args) -> int:
+    from src.api.review_setup import connect
+
+    print(json.dumps(connect(args.folder, args.url, args.name), ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_cvat_prepare(args) -> int:
     from src.api.cvat_install import prepare_install
 
@@ -518,6 +549,28 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--labels", type=Path)
     p.add_argument("--url")
     p.set_defaults(fn=cmd_cvat_import)
+
+    p = sub.add_parser("review-unpack", help="giải nén bundle dữ liệu nhỏ vào thư mục MỚI")
+    p.add_argument("archive", type=Path)
+    p.add_argument("--out", type=Path, required=True)
+    p.set_defaults(fn=cmd_review_unpack)
+    p = sub.add_parser("review-prepare", help="batch review/pilot riêng từ manifest, giữ đúng nhãn snapshot")
+    p.add_argument("--bundle", type=Path)
+    p.add_argument("--queue", type=Path)
+    p.add_argument("--original-labels", type=Path)
+    p.add_argument("--images", type=Path, required=True)
+    p.add_argument("--out", type=Path, required=True)
+    selection = p.add_mutually_exclusive_group()
+    selection.add_argument("--limit", type=int)
+    selection.add_argument("--pilot", action="store_true", help="30 ảnh từ queue nhãn gốc để chuẩn bị pilot")
+    p.add_argument("--purpose", choices=["real", "development"], default="development")
+    p.add_argument("--url", help="CVAT URL của máy đích; mặc định configs/paths.yaml")
+    p.set_defaults(fn=cmd_review_prepare)
+    p = sub.add_parser("review-connect", help="import task MỚI và mapping riêng; retry giữ task/nhãn cũ")
+    p.add_argument("folder", type=Path)
+    p.add_argument("--url", default="http://localhost:8080")
+    p.add_argument("--name", required=True)
+    p.set_defaults(fn=cmd_review_connect)
 
     p = sub.add_parser("cvat-prepare", help="chuẩn bị Compose ghim phiên bản, project/cổng riêng")
     p.add_argument("--out", type=Path, required=True)

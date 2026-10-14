@@ -68,7 +68,8 @@ def doctor(*, verify_cvat=False) -> dict:
 def package_extension(output: Path) -> int:
     source = config.ROOT / "extension"
     output.parent.mkdir(parents=True, exist_ok=True)
-    files = [p for p in source.iterdir() if p.suffix in {".json", ".js", ".html", ".css", ".md"}]
+    allowed = {".json", ".js", ".html", ".css", ".md", ".svg", ".png"}
+    files = [p for p in source.iterdir() if p.suffix in allowed]
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for file in sorted(files):
             archive.write(file, file.name)

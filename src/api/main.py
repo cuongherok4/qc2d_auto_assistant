@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Annotated, Literal
 from uuid import uuid4
 
@@ -80,14 +82,27 @@ def create_app(
     )
 
     @app.get("/health")
-    def health():
+    def health(batch: str | None = None):
         try:
-            frame, queue_id, _ = service.snapshot()
+            frame, queue_id, path = service.snapshot(batch)
+            checks = []
+            if path:
+                try:
+                    manifest = json.loads(path.with_suffix(".manifest.json").read_text())
+                    if (isinstance(manifest, dict)
+                        and manifest.get("queue_sha256") == hashlib.sha256(path.read_bytes()).hexdigest()):
+                        names = manifest.get("used_signals", [])
+                        if isinstance(names, list) and all(isinstance(n, str) for n in names):
+                            checks = names
+                except (OSError, ValueError, TypeError):
+                    pass  # No verified metadata; the UI must not invent active checks.
             return {
                 "status": "ok",
                 "queue_id": queue_id,
                 "model_version": str(frame.model_version.iloc[0]) if len(frame) else None,
                 "queue_available": len(frame) > 0,
+                "data_purpose": settings.data_purpose,
+                "active_checks": checks,
             }
         except HTTPException as exc:
             raise HTTPException(503, {"status": "degraded", "queue_error": exc.detail}) from exc

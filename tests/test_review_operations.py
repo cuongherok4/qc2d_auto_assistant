@@ -23,11 +23,15 @@ def test_fixture_assets_match_shared_contract_and_are_marked(tmp_path):
     assert len(list((tmp_path / "samples/images").glob("*.jpg"))) == 3
     assert "M13_DATABASE" in Path(result["environment"]).read_text()
     archive = tmp_path / "extension.zip"
-    assert package_extension(archive) == 5
+    assert package_extension(archive) >= 10
     with zipfile.ZipFile(archive) as zip_file:
         manifest = json.loads(zip_file.read("manifest.json"))
         assert manifest["manifest_version"] == 3
         assert "sidepanel.js" in zip_file.namelist()
+        assert "sidePanel" not in manifest["permissions"]
+        assert "content.js" in zip_file.namelist()
+        for icon in manifest["icons"].values():
+            assert zip_file.read(icon).startswith(b"\x89PNG")
 
 
 @pytest.mark.parametrize("wrong_readback", [False, True])

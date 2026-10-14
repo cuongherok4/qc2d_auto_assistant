@@ -1,5 +1,6 @@
 """Optional real Chromium MV3 + API test. CVAT page is explicitly a fixture."""
 
+import asyncio
 import json
 import os
 import socket
@@ -138,11 +139,12 @@ def test_mv3_real_api_focus_retry_and_all_verdicts(tmp_path):
             browser.expect(panel.locator(".row .rank").first).to_contain_text("Chưa chấm QC")
             browser.expect(panel.locator(".row .rank").first).not_to_contain_text("0.0 điểm")
             # Open/reuse the configured local page without changing review state.
-            panel.locator("#settings summary").click()
+            panel.locator("#settings > summary").click()
             panel.locator("#settings-form button").click()
             browser.expect(panel.locator("#settings")).not_to_have_attribute("open", "")
             settings_before = worker.evaluate("chrome.storage.local.get('settings')")["settings"]
             assert settings_before["guidelineUrl"] == f"http://127.0.0.1:{port}/guideline-review"
+            panel.locator("#open-guideline").evaluate("el => el.closest('details').open = true")
             with context.expect_page() as guideline_page:
                 panel.locator("#open-guideline").click()
             guideline = guideline_page.value
@@ -240,17 +242,30 @@ def test_mv3_saved_labels_recheck_and_lost_acknowledgement(setup_recheck, tmp_pa
     settings.cvat_url = f"http://127.0.0.1:{port}"
     app = create_app(settings, cvat_client=cvat_client)
     lost = []
+    hold, entered = threading.Event(), threading.Event()
+    requests = []
 
     @app.get("/tasks/4/jobs/6")
     def page_fixture():
-        return HTMLResponse("<h1>CVAT fixture — saved boxes supplied by mock REST</h1>")
+        return HTMLResponse(
+            "<h1>CVAT fixture — saved boxes supplied by mock REST</h1>"
+            "<button id='canvas'>Canvas fixture</button>"
+            "<a id='frame-next' onclick=\"history.pushState(null,'','?frame=1')\">Frame 1</a>"
+            "<script>window.keys=[];document.addEventListener('keydown',e=>keys.push(e.key));</script>"
+        )
 
     @app.middleware("http")
     async def lose_recheck_ack(request, call_next):
         response = await call_next(request)
-        if request.method == "POST" and request.url.path.endswith("/recheck") and not lost:
-            lost.append(True)
-            return JSONResponse({"detail": "Fixture lost acknowledgement"}, status_code=503)
+        if request.method == "POST" and request.url.path.endswith("/recheck"):
+            requests.append(True)
+            if hold.is_set():
+                entered.set()
+                while hold.is_set():
+                    await asyncio.sleep(0.02)
+            if not lost:
+                lost.append(True)
+                return JSONResponse({"detail": "Fixture lost acknowledgement"}, status_code=503)
         return response
 
     server = uvicorn.Server(uvicorn.Config(app, log_level="error"))
@@ -290,6 +305,10 @@ def test_mv3_saved_labels_recheck_and_lost_acknowledgement(setup_recheck, tmp_pa
             panel.goto(worker.url.replace("/background.js", "/sidepanel.html"))
             panel.locator(".row").first.click()
             panel.locator("#selected").wait_for(state="visible")
+            panel.locator("#run-qc").click()
+            browser.expect(panel.locator("#error")).to_contain_text("Chưa có backend QC")
+            assert requests == []  # Read-only backend cannot manufacture a score.
+            panel.locator("#annotation-details summary").first.click()
             panel.locator("#read-saved").click()
             browser.expect(panel.locator("#saved-status")).to_contain_text("Chưa có backend QC")
             browser.expect(panel.locator("#recheck")).to_be_disabled()
@@ -316,8 +335,79 @@ def test_mv3_saved_labels_recheck_and_lost_acknowledgement(setup_recheck, tmp_pa
             assert len(app.state.store.records()) == 1
             assert app.state.store.records()[0]["model_version"].startswith("recheck-")
             assert not errors
+            # Embedded overlay: actual Chrome iframe/worker, mock CVAT annotations.
+            worker.evaluate(
+                "cfg => chrome.storage.local.set({settings:cfg,review:null})",
+                {"apiUrl": settings.cvat_url, "reviewer": "Automated overlay", "batch": "",
+                 "sessionId": "fixture-overlay", "order": "priority"},
+            )
+            cvat = next(page for page in context.pages if "/tasks/4/jobs/6" in page.url)
+            cvat.bring_to_front()
+            toggle, board = cvat.locator("#m13-qc-host #toggle"), cvat.locator("#m13-qc-host #board")
+            browser.expect(toggle).to_be_visible()
+            browser.expect(board).not_to_be_visible()
+            toggle.click()
+            embedded = cvat.frame_locator("#m13-qc-host iframe")
+            embedded.locator('.row[data-image-id="image-1"]').click()
+            browser.expect(embedded.locator("#selected")).to_be_visible()
+            # Clicks/keyboard outside the panel belong to CVAT and never submit verdicts.
+            cvat.locator("#canvas").click()
+            cvat.keyboard.press("2")
+            assert cvat.evaluate("keys.includes('2')")
+            assert len(app.state.store.records()) == 1
+            browser.expect(board).to_be_visible()
+            def clock():
+                return embedded.locator("body").evaluate(
+                    "async()=> (await chrome.runtime.sendMessage({type:'CLOCK'})).value"
+                )
+            assert clock()["running"] is True
+            cvat.locator("#frame-next").click()
+            browser.expect(board).to_be_visible()
+            assert clock()["running"] is False
+            cvat.evaluate("history.replaceState(null,'','?frame=12')")
+            cvat.locator("#canvas").click()
+            cvat.wait_for_timeout(100)  # Chrome's tabs URL event follows history updates.
+            assert clock()["running"] is True
+            embedded.locator("#annotation-details > summary").click()
+            embedded.locator("#note").fill("overlay fixture")
+            assert clock()["running"] is False  # Panel focus is not CVAT review time.
+            annotations["shapes"][0]["points"] = [80, 20, 95, 50]
+            annotations["version"] += 1
+            hold.set()
+            before_requests = len(requests)
+            embedded.locator("#run-qc").click()
+            assert entered.wait(timeout=10)
+            durable = worker.evaluate("chrome.storage.local.get('review')")["review"]["recheckPending"]
+            assert durable
+            embedded.locator("#close-panel").click()
+            browser.expect(board).not_to_be_visible()
+            toggle.click()
+            browser.expect(board).to_be_visible()
+            restored = worker.evaluate("chrome.storage.local.get('review')")["review"]
+            assert restored["recheckPending"] == durable
+            assert cvat.locator("#m13-qc-host").count() == 1
+            cvat.reload()
+            browser.expect(cvat.locator("#m13-qc-host #board")).to_be_visible()
+            hold.clear()
+            embedded = cvat.frame_locator("#m13-qc-host iframe")
+            browser.expect(embedded.locator("#risk-score")).to_have_text("80.0/100")
+            browser.expect(embedded.locator("#score-origin")).to_contain_text("70.0 → 80.0")
+            assert len(requests) == before_requests + 1
+            assert len(app.state.store.records()) == 1
+            # Toolbar and floating icon use the same toggle message.
+            worker.evaluate("""async()=>{
+                const tabs=await chrome.tabs.query({});
+                const t=tabs.find(t=>t.url.includes('/tasks/4/jobs/6'));
+                await chrome.tabs.sendMessage(t.id,{type:'QC_TOGGLE'});
+            }""")
+            browser.expect(cvat.locator("#m13-qc-host #board")).not_to_be_visible()
+            cvat.locator("#canvas").click()
+            cvat.reload()
+            browser.expect(cvat.locator("#m13-qc-host #toggle")).to_be_visible()
+            browser.expect(cvat.locator("#m13-qc-host #board")).not_to_be_visible()
             context.close()
     finally:
+        hold.clear()
         server.should_exit = True
         thread.join(timeout=10)
         sock.close()

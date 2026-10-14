@@ -1,5 +1,15 @@
 # Tiến độ M13 · cập nhật 14/10 tối
 
+> **Checkpoint Tú Anh · 14/10, chưa merge:** nhánh bàn giao `feat/tuanh-review-that`
+> từ develop `4af8938`. Runtime Python 3.11.17 đã phục hồi; bộ Cường đã tải vào
+> `data/downloads/`, giải nén cô lập ở `data/m13-input-2018`, checksum nhãn và hash
+> hai bộ queue/evidence/labels/features/predictions đều khớp. Công cụ chuẩn bị batch
+> và pilot đã kiểm bằng fixture; recheck bị chặn trong DB pilot để giữ snapshot.
+> Kiểm mới: **159 passed, 5 skipped; Chromium 3 passed; Ruff sạch**. CVAT HTTP 200.
+> **Còn chờ:** ảnh để kiểm 10 ảnh BDD thật, audit do Long chốt, hai reviewer và pilot
+> thật. Hướng dẫn: [demo-chay-lai.md](demo-chay-lai.md). Chưa tăng số việc nghiệm thu
+> trong bảng dưới; test/chuẩn bị không thay nghiệm thu người thật hoặc PR merge.
+
 Việc còn lại cho 15/10: [viec-con-lai-15-10.md](viec-con-lai-15-10.md).
 
 Phần trăm = số việc đã xong / số việc được giao trong [bản phân công 13/10](phan-tich-va-phan-cong-13-10.md). Việc chỉ "đã viết" mà chưa chạy trên dữ liệu thật thì chưa tính là xong. Phần mở rộng (GBM, VLM, tự học lại) không tính vào.
@@ -104,6 +114,37 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 Danh sách: `data/manual_check/manual-check-v1.csv` (lấy qua Drive; **sinh lại 14/10 trên nhãn 2018**, 131/150 ảnh trùng danh sách cũ, ai đã tải bản 13/10 thì tải lại). 75 ảnh ngẫu nhiên + 75 ảnh đầu hàng đợi `rule-v1.2-goc` (chấm trên **nhãn gốc**, không phải nhãn đã tiêm), đã trộn thứ tự, seed 42. Người kiểm **không** mở `manual-check-v1.key.json` (ghi ảnh nào thuộc nhóm nào) cho đến khi đối chiếu, để không bị thiên lệch. Sinh lại: `python -m src.cli manual-sample --queue reports/ranked_queue_rule-v1.2-goc.csv`.
 
 ## Dữ liệu chia qua Drive (không có trên git)
+
+### Kiểm giao diện local 14/10 — không đổi tỷ lệ nghiệm thu 5/8
+
+**Bổ sung giao diện:** Chrome extension 0.3.0 dùng bảng QC cố định trong trang
+CVAT, icon QC bật/tắt, không còn Chrome side panel. Click canvas/Save/chuyển frame
+không đóng bảng; đóng không chặn chuột, reload giữ trạng thái. Một nút QC đọc nhãn
+đã Save rồi recheck; giữ snapshot/verdict/retry, tọa độ đầu vào và thống kê.
+Timer loại thời gian focus bảng, phím verdict không chiếm phím ngoài bảng.
+Logo QC và đủ icon được đóng gói; không sửa source/stack CVAT.
+
+Đã kiểm CVAT thật trên **task 7/job 7, API 8003**, ảnh tổng hợp và rule
+`edge_no_trunc`: nhãn chưa Save được bỏ qua; Save → QC 100→0→100, điều hướng/reload
+và verdict. Task 6/API 8002 giữ nguyên. Test Chrome dùng mock REST còn kiểm mất
+phản hồi và mở/đóng/reload giữa lúc QC đang chờ không gửi trùng. Bằng chứng mới ở
+`data/cvat-overlay-validation/`; cách thử trong `docs/demo-chay-lai.md`.
+Máy khác vẫn nạp Chrome extension và cấu hình API/mapping riêng; chưa kiểm máy thứ
+hai, BDD/pilot người thật vẫn chờ. Không commit/push.
+
+Đã chạy 5 bước độc lập trên task CVAT mới 6/job 6 và API 8002, DB
+`data/cvat-ui-validation/demo/review.db`: import 3 ảnh fixture/mapping thật;
+Chrome extension/ảnh/evidence/timer/verdict; kéo box trong CVAT → Save → đọc
+nhãn mới → pipeline rule `edge_no_trunc` chấm 100→0→100; restart API giữ queue
+và verdict; chuẩn bị lại/import lại không ghi đè annotations hoặc mapping.
+Bằng chứng `data/cvat-ui-validation/live-verification.json` và ảnh chụp cùng
+thư mục. Giao diện/lệnh thử có trong `docs/demo-chay-lai.md`.
+
+Ảnh tổng hợp và một verdict tự động development; không có detector/Gemini/ML
+trong luồng này và không phải pilot người thật. Mục chạy queue `rule-v1.2` trên
+ảnh BDD vẫn chờ ảnh; pilot cần hai người; máy demo sạch chưa kiểm. Không
+commit/push. Công cụ prepare đã sửa đọc manifest có đường dẫn tương đối repo,
+vẫn buộc artifact nằm trong bundle và khớp hash.
 
 **Bộ dữ liệu chung 14/10:** [`m13-data-2018-14-10.zip`](https://drive.google.com/drive/folders/1JHSxrLOmYw1VAhiSNd4Ns-5T3iTMOiyQ) (38MB, sha256 `115136f31cff8658…`). Giải nén ở thư mục gốc repo là các file vào đúng chỗ. Gồm nhãn 2018 đã chuyển, `injected/`, `manual_check/`, `yolo_preds.parquet`, hàng đợi `rule-v1.2` và `rule-v1.2-goc`. Ảnh không có trong zip: lấy `bdd100k_dataset_for_yolo.zip` trên [Drive của Sơn](https://drive.google.com/drive/folders/1l6m-NQaUovVrjoU2VNubIm7743qUlAST).
 
