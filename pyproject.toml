@@ -32,6 +32,7 @@ include = ["src*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # test import lẫn nhau (tests.test_cli_flow) khi chạy bằng lệnh `pytest`
 markers = ["data: cần dữ liệu BDD100K thật trong data/ (tự bỏ qua nếu chưa có)"]
 
 [tool.ruff]
