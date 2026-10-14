@@ -98,11 +98,16 @@ def r1_spec(min_height_px, **extra):
     return {"id": "toy", "rules": [R1], "min_height_px": min_height_px, "near_threshold_px": 3, **extra}
 
 
+FULL = {"occluded": False, "truncated": False}
+
+
 def tables(boxes: dict[str, list[tuple]], empty: tuple[str, ...] = ()):
-    """boxes: {image_id: [(category, h), ...]} -> (objects, images); box rộng 40px, đặt giữa ảnh."""
+    """boxes: {image_id: [(category, h[, attributes]), ...]} -> (objects, images); box rộng 40px, giữa ảnh.
+    Không truyền attributes thì nhãn không có khoá "attributes" (thiếu thuộc tính)."""
     frames = [{"name": f"{img}.jpg", "labels": [
-        {"id": str(i), "category": c, "box2d": {"x1": 600.0, "y1": 300.0, "x2": 640.0, "y2": 300.0 + h}}
-        for i, (c, h) in enumerate(bs, 1)]} for img, bs in boxes.items()]
+        {"id": str(i), "category": c, "box2d": {"x1": 600.0, "y1": 300.0, "x2": 640.0, "y2": 300.0 + h},
+         **({"attributes": a[0]} if a else {})}
+        for i, (c, h, *a) in enumerate(bs, 1)]} for img, bs in boxes.items()]
     frames += [{"name": f"{img}.jpg", "labels": None} for img in empty]
     return bdd100k.to_tables(frames)
 
@@ -157,8 +162,56 @@ def test_unregistered_check_is_skipped_with_warning():
 
 def test_bdd_default_has_no_height_violation():
     """Guideline gốc BDD không đặt ngưỡng chiều cao (default 0): R1 không báo box nào."""
-    objects, images = tables({"a": [("car", 2.0), ("traffic sign", 5.0)]})
+    objects, images = tables({"a": [("car", 2.0, FULL), ("traffic sign", 5.0, FULL)]})
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         spec = gr.load_spec("bdd-default@1.0.0", allow_unapproved=True)
         assert gr.guideline(objects, images, spec)["a"].value == 0
+
+
+# --- R2: class_not_allowed ---
+
+R2 = {"id": "R2", "check": "class_not_allowed", "severity": 1.0,
+      "message": "Class {category} không có trong guideline {gid}"}
+
+
+def test_r2_flags_class_outside_spec():
+    objects, images = tables({"a": [("trailer", 50.0)], "b": [("car", 50.0)]})
+    out = gr.guideline(objects, images, {"id": "toy", "classes": ["car"], "rules": [R2]})
+    assert out["a"].value == pytest.approx(1.0)
+    assert out["a"].reason == "[R2] Class trailer không có trong guideline toy"
+    assert out["b"].value == 0
+
+
+def test_r2_checks_class_name_after_merge():
+    objects, images = tables({"a": [("bus", 50.0)]})
+    spec = {"id": "toy", "classes": ["car", "truck"], "rules": [R2]}
+    assert gr.guideline(objects, images, spec)["a"].value == pytest.approx(1.0)
+    assert gr.guideline(objects, images, {**spec, "merge": {"bus": "truck"}})["a"].value == 0
+
+
+# --- R3: missing_attribute ---
+
+R3 = {"id": "R3", "check": "missing_attribute", "severity": 0.3,
+      "message": "Box {category} #{obj_id} thiếu thuộc tính {attr}"}
+R3_SPEC = {"id": "toy", "classes": ["car"], "required_attributes": ["occluded", "truncated"], "rules": [R3]}
+
+
+def test_r3_flags_missing_attribute():
+    objects, images = tables({"none": [("car", 50.0)], "half": [("car", 50.0, {"occluded": True})]})
+    out = gr.guideline(objects, images, R3_SPEC)
+    assert out["none"].value == pytest.approx(0.3)
+    assert out["none"].reason == "[R3] Box car #1 thiếu thuộc tính occluded, truncated"
+    assert out["half"].reason == "[R3] Box car #1 thiếu thuộc tính truncated"
+
+
+def test_r3_false_value_is_not_missing():
+    both_true = {"occluded": True, "truncated": True}
+    objects, images = tables({"a": [("car", 50.0, FULL), ("car", 60.0, both_true)]})
+    assert gr.guideline(objects, images, R3_SPEC)["a"].value == 0
+
+
+def test_r3_requires_has_columns():
+    objects, images = tables({"a": [("car", 50.0)]})
+    with pytest.raises(ValueError, match="data/cache"):
+        gr.guideline(objects.drop(columns=["has_truncated"]), images, R3_SPEC)

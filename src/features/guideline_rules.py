@@ -127,8 +127,43 @@ def below_min_height(objects: pd.DataFrame, spec: dict, rule: dict) -> list[dict
         else:
             severity = rule["severity"]
             text = rule["message"].format(**ctx)
-        out.append({"image_id": r.image_id, "obj_id": r.obj_id, "box": [r.x1, r.y1, r.x2, r.y2],
-                    "severity": severity, "reason": _reason(rule, text)})
+        out.append(_violation(r, rule, text, severity))
+    return out
+
+
+def _violation(r, rule: dict, text: str, severity: float | None = None) -> dict:
+    return {"image_id": r.image_id, "obj_id": r.obj_id, "box": [r.x1, r.y1, r.x2, r.y2],
+            "severity": rule["severity"] if severity is None else severity, "reason": _reason(rule, text)}
+
+
+@check("class_not_allowed")
+def class_not_allowed(objects: pd.DataFrame, spec: dict, rule: dict) -> list[dict]:
+    """R2: category (sau merge) không có trong classes của spec."""
+    hits = objects[~objects["category"].isin(spec["classes"])]
+    return [_violation(r, rule, rule["message"].format(category=r.category, obj_id=r.obj_id, gid=spec["id"]))
+            for r in hits.itertuples(index=False)]
+
+
+@check("missing_attribute")
+def missing_attribute(objects: pd.DataFrame, spec: dict, rule: dict) -> list[dict]:
+    """R3: box không có thuộc tính bắt buộc trong nhãn (khác với có nhưng giá trị false).
+
+    Đọc cột has_<attr> do bdd100k.to_tables sinh ra. Một box thiếu nhiều thuộc tính chỉ tính một vi phạm.
+    """
+    attrs = spec.get("required_attributes") or []
+    cols = [f"has_{a}" for a in attrs]
+    absent = [c for c in cols if c not in objects.columns]
+    if absent:
+        raise ValueError(f"Bảng nhãn thiếu cột {absent}: cache cũ thì xoá data/cache/ để sinh lại")
+    if not attrs:
+        return []
+    missing = ~objects[cols].astype(bool)
+    hit = missing.any(axis=1)
+    out = []
+    for r, flags in zip(objects[hit].itertuples(index=False), missing[hit].to_numpy(), strict=True):
+        attr = ", ".join(a for a, m in zip(attrs, flags, strict=True) if m)
+        out.append(_violation(r, rule, rule["message"].format(category=r.category, obj_id=r.obj_id,
+                                                              attr=attr, gid=spec["id"])))
     return out
 
 
