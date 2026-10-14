@@ -1,15 +1,15 @@
-# Tiến độ M13 · cập nhật 14/10 tối
+# Tiến độ M13 · cập nhật 14/10 chiều (sau review lượt 1)
 
 Việc còn lại cho 15/10: [viec-con-lai-15-10.md](viec-con-lai-15-10.md).
 
 Phần trăm = số việc đã xong / số việc được giao trong [bản phân công 13/10](phan-tich-va-phan-cong-13-10.md). Việc chỉ "đã viết" mà chưa chạy trên dữ liệu thật thì chưa tính là xong. Phần mở rộng (GBM, VLM, tự học lại) không tính vào.
 
 ```
-Cả nhóm   ████████████░░░░░░░░  23/37  62%
+Cả nhóm   ███████████████░░░░░  27/37  73%
 Cường     ██████████████████░░  11/12  92%
 Tú Anh    █████████████░░░░░░░   5/8   63%
-Sơn       █████████████░░░░░░░   5/8   63%   (3 việc Cường làm thay)
-Long      ████░░░░░░░░░░░░░░░░   2/9   22%
+Sơn       ██████████████████░░   7/8   88%   (3 việc Cường làm thay)
+Long      █████████░░░░░░░░░░░   4/9   44%
 ```
 
 ## Kết quả hiện có
@@ -53,6 +53,7 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 - [x] API đọc đúng queue/evidence `rule-v1.2` (đã chạy thử)
 - [x] Danh sách 150 ảnh kiểm tay (`manual-sample`)
 - [x] Merge PR `feat/cuong-detector-signals`, `feat/cuong-gbm`; chia dữ liệu qua Drive
+- [x] Review, merge lượt 1 (14/10): 3 nhánh Long, sửa detector của Sơn; CI chạy mọi nhánh + kiểm file commit
 - [ ] Tổng hợp số liệu cuối sau khi có kiểm tay và pilot (trước 15/10 20:00)
 - [x] *(mở rộng, không tính %)* GBM `gbm-v1`: `python -m src.cli train-gbm --version gbm-v1 --preds data/yolo_preds.parquet`
 
@@ -63,7 +64,7 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 - [x] Extension Chrome
 - [x] Công cụ đọc/sửa/duyệt guideline
 - [x] Công cụ demo, pilot
-- [ ] **Chạy queue `rule-v1.2` trên máy mình qua CVAT + extension, kiểm tô đúng box** ← việc tiếp theo
+- [ ] **Chạy queue trên 10 ảnh BDD thật qua CVAT + extension** ← chờ ảnh từ Sơn. Nhánh `feat/tuanh-review-that` (bảng QC nổi trong CVAT, `review-unpack`) chưa merge: CI đỏ do đường dẫn máy cá nhân
 - [ ] Pilot 30 ảnh: 2 người, một theo ưu tiên, một theo thứ tự file
 - [ ] Dựng máy demo (16/10)
 
@@ -74,19 +75,19 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 - [x] 4 tín hiệu bất đồng *(Cường làm thay)*
 - [x] Đọc lại `src/features/detector.py`, `model_disagreement.py`: tìm ra 2 lỗi (box lệch nhiều, capo xe mình)
 - [x] Vẽ box để kiểm tay (`src/viz/draw.py`, đã merge 13/10)
-- [ ] **Sửa 2 lỗi detector, PR `feat/son-fix-disagreement`, chạy `rule-v1.3`** ← việc tiếp theo
+- [x] Sửa 2 lỗi detector (`loose_min_iou`, capo xe mình), đã merge 14/10; số `rule-v1.3` Cường chạy lại
 - [x] Kiểm tay 150 ảnh (`phieu-son.csv` trên Drive, 14/10)
-- [ ] Hỗ trợ Long viết R4 (dùng kết quả so khớp detector)
+- [ ] **R4 làm chính** (dùng kết quả so khớp detector) ← việc tiếp theo; gửi ảnh val cho Tú Anh
 
 ### Long · guideline & chất lượng — 2/9
 
 - [x] 4 tín hiệu cơ bản
 - [x] Đọc spec, engine, R1 (box thấp hơn ngưỡng)
-- [ ] **R2 class không có trong guideline** ← việc tiếp theo
-- [ ] R3 thiếu thuộc tính
-- [ ] Duyệt spec (`approved_by`) để `rank --spec` chạy được
-- [ ] R4 (cùng Sơn)
-- [ ] Phiếu kiểm tay + cách lấy mẫu kiểm phần cuối hàng đợi
+- [x] R2 class không có trong guideline (đã merge 14/10)
+- [x] R3 thiếu thuộc tính (đã merge 14/10; nhãn 2018 không có vi phạm)
+- [ ] Duyệt spec để `rank --spec` chạy được (đã có `guideline-m13.docx` + đáp án, còn extract → approve)
+- [ ] R4 (Sơn làm chính)
+- [ ] Phiếu kiểm tay ✅ (`huong-dan-kiem-tay.md`) + **định nghĩa audit** ← việc tiếp theo, gửi Tú Anh trước 12:30
 - [ ] Kiểm tay 75 ảnh (`manual-check-v1.long.csv`); tính kappa với phiếu Sơn
 - [ ] Báo cáo
 
@@ -95,7 +96,7 @@ Bộ tín hiệu và cấu hình GBM chọn trên val (chọn trên det_20, chư
 | Mốc | Tình trạng |
 |---|---|
 | 13/10 · Ghép phần đã viết | Gần xong: code đã ghép, API đọc được queue thật; còn chạy qua CVAT + extension trên máy Tú Anh |
-| 14/10 · Đủ luồng QC cốt lõi | Detector → queue ✅, baseline ✅; còn R2/R3, bắt đầu kiểm tay |
+| 14/10 · Đủ luồng QC cốt lõi | Detector → queue ✅, baseline ✅, R1–R3 ✅, kiểm tay Sơn ✅; còn chạy trên CVAT với ảnh thật |
 | 15/10 20:00 · Đóng băng | Chưa: cần kiểm tay + pilot |
 | 16/10 · Bản nộp & video | Chưa |
 
