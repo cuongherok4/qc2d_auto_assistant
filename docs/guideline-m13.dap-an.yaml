@@ -1,0 +1,68 @@
+# Đáp án viết tay cho docs/guideline-m13.docx: spec mà bước LLM (guideline extract) phải trích ra.
+# Dùng để đối chiếu bản nháp trong configs/guidelines/drafts/ trước khi duyệt; không phải spec đã duyệt.
+# Số trang theo PDF xuất từ Word; LibreOffice có thể ngắt trang khác, khi đối chiếu ưu tiên câu trích.
+id: m13-bdd
+version: 1.0.0
+classes: [pedestrian, rider, car, truck, bus, train, motorcycle, bicycle, traffic light, traffic sign]
+merge: {}
+min_height_px:
+  default: 10
+near_threshold_px: 3
+required_attributes: [occluded, truncated]
+rules:
+  - id: R1
+    check: below_min_height
+    page: 1
+    quote: "Không gán vật có chiều cao dưới 10 pixel."
+    message: "Box {category} cao {h:.0f}px, dưới ngưỡng {thr}px của guideline {gid}"
+  - id: R2
+    check: class_not_allowed
+    page: 1
+    quote: "Chỉ dùng các class trong bảng trên."
+    message: "Class {category} không có trong guideline {gid}"
+  - id: R3
+    check: missing_attribute
+    page: 2
+    quote: "Mọi box phải có đủ hai thuộc tính occluded và truncated."
+    message: "Box {category} #{obj_id} thiếu thuộc tính {attr}"
+  - id: R4
+    check: model_object_missing
+    page: 1
+    quote: "Phải gán mọi vật thuộc class được phép có chiều cao từ 10 pixel trở lên."
+    message: "Thiếu {category} cao {h:.0f}px, ngưỡng {thr}px"
+visual_rules:
+  - id: V1
+    category: rider
+    page: 1
+    quote: "Người đang điều khiển xe đạp hoặc xe máy gán là rider; chiếc xe gán riêng là bicycle hoặc motorcycle."
+    question: "Người trong khung có đang điều khiển xe đạp hoặc xe máy không?"
+  - id: V2
+    category: traffic light
+    page: 1
+    quote: "Đèn giao thông chỉ gán phần hộp đèn; không gán đèn đường hay đèn của xe là traffic light."
+    question: "Vật trong khung là hộp đèn giao thông, hay là đèn đường / đèn xe?"
+  - id: V3
+    page: 1
+    quote: "Không gán người hay xe xuất hiện trong gương, trên kính phản chiếu hoặc trên biển quảng cáo."
+    question: "Vật trong khung là vật thật, hay là hình phản chiếu / hình trên biển quảng cáo?"
+  - id: V4
+    page: 2
+    quote: "Vật chạm mép ảnh và bị cắt mất một phần phải gắn truncated = true."
+    question: "Vật trong khung có bị mép ảnh cắt mất một phần không?"
+unclear:
+  - {field: scope, note: "Lane và vùng lái được (polygon, polyline) nằm ngoài phạm vi, chưa hỗ trợ"}
+  - {field: unsupported_geometric_check, note: "Box ôm sát và không gán trùng box chưa có check tương ứng"}
+  - {field: escalation, note: "Vật quá mờ / bị che quá nửa: báo trưởng nhóm, không phải luật tự động"}
+facts:
+  - field: classes
+    page: 1
+    quote: "pedestrian, rider, car, truck, bus, train, motorcycle, bicycle, traffic light, traffic sign"
+  - field: min_height_px.default
+    page: 1
+    quote: "Không gán vật có chiều cao dưới 10 pixel."
+  - field: near_threshold_px
+    page: 2
+    quote: "Box có chiều cao chênh với ngưỡng không quá 3 pixel được xem là sát ngưỡng và cần người kiểm xem lại."
+  - field: required_attributes
+    page: 2
+    quote: "Mọi box phải có đủ hai thuộc tính occluded và truncated."
