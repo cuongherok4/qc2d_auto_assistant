@@ -25,7 +25,7 @@ SECRET = re.compile(
     r"|-----BEGIN [A-Z ]*PRIVATE KEY-----"
 )
 HOME_PATH = re.compile(r"(/home/|/Users/|[A-Z]:\\Users\\)[A-Za-z0-9_.-]+")
-# compose gốc của CVAT dùng /home/django trong container, không phải máy cá nhân
+# compose gốc của CVAT dùng thư mục home của user django trong container, không phải máy cá nhân
 HOME_PATH_SKIP = ("deployment/cvat/upstream/",)
 
 
