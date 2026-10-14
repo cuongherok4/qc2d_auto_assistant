@@ -4,8 +4,9 @@
 Mỗi hàm: (objects, images, preds, cfg) -> Signals, trả kết quả cho MỌI ảnh trong `images`.
 
 Khớp một lần cho cả 4 tín hiệu (_match): từng ảnh, Hungarian trên 1 - IoU (+ phạt khác class) giữa nhãn và
-dự đoán conf >= match_conf, IoU >= min_iou mới coi là cùng object. COCO không có rider và traffic sign: hai
-class này vẫn tham gia khớp (để dự đoán đè lên chúng không bị báo "thiếu box") nhưng không bao giờ bị báo
+dự đoán conf >= match_conf, IoU >= min_iou mới coi là cùng object (riêng box lệch: IoU >= loose_min_iou).
+Dự đoán dạng capo xe mình bị bỏ trước khi khớp. COCO không có rider và traffic sign: hai class này
+vẫn tham gia khớp (để dự đoán đè lên chúng không bị báo "thiếu box") nhưng không bao giờ bị báo
 sai class / box giả; dự đoán pedestrian khớp nhãn rider coi là đồng ý.
 Nếu có spec guideline: gộp class theo `merge`, bỏ dự đoán thấp hơn min_height_px,
 ngưỡng box lệch lấy `iou_loose`.
@@ -25,6 +26,7 @@ DEFAULTS = {
     "match_conf": 0.3,      # dự đoán dưới ngưỡng này không tham gia khớp
     "nms_iou": 0.7,         # RT-DETR không NMS: gộp dự đoán trùng nhau trước khi khớp
     "min_iou": 0.5,         # IoU tối thiểu để coi là cùng object
+    "loose_min_iou": 0.3,   # riêng box lệch: box dịch ~1/3 bề rộng đã có IoU < min_iou
     "class_penalty": 0.3,   # cộng vào chi phí khi khác class, để ưu tiên khớp cùng class
     "loose_iou": 0.7,       # cùng class nhưng IoU dưới ngưỡng này -> box lệch (spec iou_loose ghi đè)
     "missing_conf": 0.5,    # dự đoán không khớp, conf >= ngưỡng -> nghi thiếu box
@@ -36,6 +38,8 @@ DEFAULTS = {
     "support_conf": 0.1,    # dự đoán conf >= ngưỡng này có IoU >= support_iou là đủ "có hỗ trợ"
     "support_iou": 0.3,
     "h_sat": 60.0,          # vật cao từ ngưỡng này có trọng số kích thước đầy đủ
+    "ego_min_y2": 715.0,    # dự đoán chạm đáy ảnh và rộng từ ego_min_w là capo xe mình (BDD không gán): bỏ
+    "ego_min_w": 640.0,
     "no_model_classes": ["rider", "traffic sign"],
     "compatible": [["rider", "pedestrian"]],  # [nhãn, dự đoán] coi là cùng class
 }
@@ -67,6 +71,8 @@ def _nms(boxes: np.ndarray, conf: np.ndarray, thr: float) -> np.ndarray:
 
 def _filter_preds(preds: pd.DataFrame, p: dict, spec: dict | None) -> pd.DataFrame:
     preds = preds[preds["conf"] >= min(p["match_conf"], p["support_conf"])].copy()
+    ego = (preds["y2"] >= p["ego_min_y2"]) & ((preds["x2"] - preds["x1"]) >= p["ego_min_w"])
+    preds = preds[~ego]
     if spec:
         from src.features.guideline_rules import min_height
 
@@ -112,7 +118,8 @@ def _match(objects: pd.DataFrame, images: pd.DataFrame, preds: pd.DataFrame, cfg
                 [[(a, b) in compat for b in pcat] for a in lc], dtype=bool).reshape(iou.shape)
             rows, colsi = linear_sum_assignment(1.0 - iou + p["class_penalty"] * ~same)
             pairs = [(int(i), int(j), float(iou[i, j]), bool(same[i, j]))
-                     for i, j in zip(rows, colsi, strict=True) if iou[i, j] >= p["min_iou"]]
+                     for i, j in zip(rows, colsi, strict=True)
+                     if iou[i, j] >= min(p["min_iou"], p["loose_min_iou"])]
         out[img] = {"labels": lab, "preds": pr, "iou": iou, "pairs": pairs, "support": support,
                     "alt": alt, "alt_iou": alt_iou}
     _CACHE.update(key=key, src=src, value=out)
@@ -172,7 +179,8 @@ def model_class_conflict(objects, images, preds, cfg=None) -> Signals:
         lab, pr = m["labels"], m["preds"]
         for i, j, iou, same in m["pairs"]:
             lr, r = lab.iloc[i], pr.iloc[j]
-            if same or lr.category in skip or r.conf < p["conflict_conf"] or lr.h < p["min_h"]:
+            if same or iou < p["min_iou"] or lr.category in skip or r.conf < p["conflict_conf"] \
+                    or lr.h < p["min_h"]:
                 continue
             agree = [(lr.category == c or (lr.category, c) in compat) and m["alt_iou"][i, k] >= p["min_iou"]
                      for k, c in enumerate(m["alt"]["category"])]
@@ -188,15 +196,16 @@ def model_class_conflict(objects, images, preds, cfg=None) -> Signals:
 
 
 def model_loose_box(objects, images, preds, cfg=None) -> Signals:
-    """Khớp cùng class nhưng min_iou <= IoU < loose_iou -> nghi box lệch/co giãn."""
+    """Khớp cùng class nhưng loose_min_iou <= IoU < loose_iou -> nghi box lệch/co giãn."""
     p, _ = _params(cfg)
-    span = max(p["loose_iou"] - p["min_iou"], 1e-6)
+    span = max(p["loose_iou"] - p["loose_min_iou"], 1e-6)
     items = {}
     for img, m in _match(objects, images, preds, cfg).items():
         lab, pr = m["labels"], m["preds"]
         for i, j, iou, same in m["pairs"]:
             lr, r = lab.iloc[i], pr.iloc[j]
-            if not same or iou >= p["loose_iou"] or r.conf < p["loose_conf"] or lr.h < p["min_h"]:
+            if not same or not p["loose_min_iou"] <= iou < p["loose_iou"] or r.conf < p["loose_conf"] \
+                    or lr.h < p["min_h"]:
                 continue
             score = (0.5 + 0.5 * (p["loose_iou"] - iou) / span) * r.conf * _size_w(lr.h, p)
             items.setdefault(img, []).append((score, (
