@@ -73,3 +73,20 @@ def test_spec_drops_predictions_below_min_height():
     assert md.model_missing_label(objects, images, preds)["small"].value > 0
     spec = {"min_height_px": {"default": 50}, "merge": {}}
     assert md.model_missing_label(objects, images, preds, {"spec": spec})["small"].value == 0
+
+
+def test_loose_box_catches_shift_below_min_iou():
+    objects, images = _tables({"shift35": [("car", CAR)]})
+    preds = _preds([("shift35", "car", (170, 100, 370, 250), 0.9)])  # dịch 35% bề rộng: IoU 0.48 < min_iou
+    out = md.model_loose_box(objects, images, preds)["shift35"]
+    assert out.value > 0 and "IoU 0.48" in out.reason
+    # IoU dưới min_iou không được coi là "khớp nhưng khác class"
+    preds.loc[0, "category"] = "truck"
+    assert md.model_class_conflict(objects, images, preds)["shift35"].value == 0
+
+
+def test_ego_hood_prediction_is_not_missing_label():
+    objects, images = _tables({"hood": [("car", CAR)]})
+    preds = _preds([("hood", "car", CAR, 0.9), ("hood", "car", (0, 520, 1280, 720), 0.8)])
+    assert md.model_missing_label(objects, images, preds)["hood"].value == 0
+    assert md.model_missing_label(objects, images, preds, {"ego_min_w": 2000})["hood"].value > 0
