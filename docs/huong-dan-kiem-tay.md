@@ -5,7 +5,8 @@ ngẫu nhiên. Đây là thước đo cuối của dự án, nên hai người p
 
 ## 1. Nguyên tắc
 
-- Long và Sơn mỗi người kiểm đủ 150 ảnh trong `data/manual_check/manual-check-v1.csv`, theo `check_order`.
+- Sơn kiểm đủ 150 ảnh trong `data/manual_check/manual-check-v1.csv` (đã xong 14/10). Long kiểm 75 ảnh trong
+  `manual-check-v1.long.csv` (38 ngẫu nhiên + 37 đầu hàng đợi), là phần chung để tính kappa. Kiểm theo `check_order`.
 - Không xem phiếu của nhau, không trao đổi về từng ảnh cho đến khi **cả hai** đã nộp phiếu.
 - Không mở `manual-check-v1.key.json` (cho biết ảnh nào do tool chọn) trước khi đối chiếu xong.
 - Chỉ xem **nhãn gốc**. Không vẽ dự đoán model hay box nghi vấn, không xem hàng đợi trong lúc kiểm.
@@ -13,11 +14,13 @@ ngẫu nhiên. Đây là thước đo cuối của dự án, nên hai người p
 
 ## 2. Vẽ box
 
-Cần ảnh val của 150 ảnh trong `data/bdd100k/images/100k/val/`. Lệnh dưới vẽ nhãn gốc ra
-`reports/viz/manual-check-v1/`; nhãn ghi `class chiều cao`, thêm `O` nếu occluded, `T` nếu truncated:
+Cần ảnh val của các ảnh cần kiểm trong `data/bdd100k/images/100k/val/`. Lệnh dưới vẽ nhãn gốc của các ảnh trong
+`LIST` ra `reports/viz/kiem-tay/`, tên file có số `check_order` ở đầu để mở theo thứ tự; nhãn ghi `class chiều cao`,
+thêm `O` nếu occluded, `T` nếu truncated:
 
 ```bash
-python -c "
+LIST=data/manual_check/manual-check-v1.long.csv python -c "
+import os
 from pathlib import Path
 import pandas as pd
 from src.data import bdd100k
@@ -25,14 +28,17 @@ from src.viz.draw import draw_image
 objects, _ = bdd100k.load()
 flags = objects['occluded'].map({True: ' O', False: ''}) + objects['truncated'].map({True: ' T', False: ''})
 objects = objects.assign(category=objects['category'] + flags)
-for image_id in pd.read_csv('data/manual_check/manual-check-v1.csv', dtype=str)['image_id']:
-    draw_image(image_id, objects, out_dir=Path('reports/viz/manual-check-v1'))
+out = Path('reports/viz/kiem-tay')
+for r in pd.read_csv(os.environ['LIST'], dtype=str).itertuples():
+    draw_image(r.image_id, objects, out_dir=out).rename(out / f'{int(r.check_order):03d}_{r.image_id}.jpg')
 "
 ```
 
+Chữ dày ở ảnh đông xe thì phóng to, hoặc mở ảnh gốc `data/bdd100k/images/100k/val/<image_id>.jpg` để so.
+
 ## 3. Phiếu
 
-Mỗi người một file `data/manual_check/phieu-<ten>.csv` (đã có sẵn 150 dòng, chỉ điền 4 cột cuối):
+Mỗi người một file `data/manual_check/phieu-<ten>.csv` (phiếu trống trên Drive, đủ dòng theo danh sách của mình, chỉ điền 4 cột cuối):
 
 | Cột | Giá trị |
 |---|---|
@@ -64,8 +70,9 @@ Còn lại là `khong_loi`. Không chắc giữa `loi` và `khong_loi` thì ch�
 
 ## 5. Sau khi cả hai nộp phiếu
 
-1. Đối chiếu hai phiếu, tính Cohen's kappa trên các ảnh cả hai cùng ghi `loi` hoặc `khong_loi`;
+1. Đối chiếu hai phiếu trên 75 ảnh chung, tính Cohen's kappa trên các ảnh cả hai cùng ghi `loi` hoặc `khong_loi`;
    báo riêng số ảnh có ít nhất một người ghi `khong_chac`. Kappa dưới 0.6 thì tiêu chí chưa rõ, bàn lại trước khi dùng số.
 2. Hai người thống nhất kết luận cho các ảnh lệch nhau, ghi lý do.
-3. Mở `manual-check-v1.key.json`, tách tỉ lệ lỗi theo nhóm ảnh ngẫu nhiên và nhóm đầu hàng đợi.
+3. Mở `manual-check-v1.key.json`, tách tỉ lệ lỗi theo nhóm ảnh ngẫu nhiên và nhóm đầu hàng đợi trên đủ 150 ảnh
+   (75 ảnh chung lấy kết luận đã thống nhất, 75 ảnh còn lại lấy phiếu Sơn).
 4. Phiếu và kết quả gửi qua Drive, không commit.
