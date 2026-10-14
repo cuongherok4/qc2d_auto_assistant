@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from src.api.cvat_import import import_batch
-from src.api.fixtures import prepare
+from src.api.fixtures import prepare, prepare_scored
 from src.api.operations import export_pilot, package_extension
 from src.api.settings import Settings
 from src.api.store import ReviewStore
@@ -32,6 +32,52 @@ def test_fixture_assets_match_shared_contract_and_are_marked(tmp_path):
         assert "content.js" in zip_file.namelist()
         for icon in manifest["icons"].values():
             assert zip_file.read(icon).startswith(b"\x89PNG")
+
+
+def test_scored_fixture_uses_actual_rule_without_detector_and_rechecks(tmp_path):
+    from src import pipeline
+
+    root = tmp_path / "scored fixture"
+    result = prepare_scored(root, cvat_url="http://localhost:8099")
+    assert result["fixture"] and result["scored_qc"] and not result["real_detector"]
+    folder = Path(result["folder"])
+    queue_file = next(folder.glob("ranked_queue_*.csv"))
+    queue = pd.read_csv(queue_file).fillna("")
+    assert queue.iloc[0].image_id == "fixture-qc-01" and queue.iloc[0].risk_score > 0
+    assert not (folder / "predictions.parquet").exists()
+    original = queue_file.read_bytes()
+    artifact = pipeline.recheck(
+        snapshot={"image_id": "fixture-qc-01", "width": 1280, "height": 720, "boxes": [{
+            "obj_id": "123", "category": "car", "box": [150, 180, 350, 380],
+            "attributes": {"occluded": False, "truncated": False},
+        }]}, queue=queue, output_dir=tmp_path / "rechecked", model_version="rule-fixture-next", seed=42,
+        manifest_file=queue_file.with_suffix(".manifest.json"),
+    )
+    assert pd.read_csv(artifact["queue_file"]).iloc[0].risk_score == 0
+    assert queue_file.read_bytes() == original
+    assert json.loads(queue_file.with_suffix(".manifest.json").read_text())["preds_file"] is None
+
+
+def test_scored_fixture_rerun_preserves_user_data_and_refuses_modified_inputs(tmp_path):
+    root = tmp_path / "demo"
+    first = prepare_scored(root)
+    folder = Path(first["folder"])
+    (folder / "review.db").write_bytes(b"user verdicts")
+    (folder / "cvat_map.parquet").write_bytes(b"user mapping")
+    assert prepare_scored(root) == first
+    assert (folder / "review.db").read_bytes() == b"user verdicts"
+    assert (folder / "cvat_map.parquet").read_bytes() == b"user mapping"
+    image = root / "images" / "fixture-qc-01.jpg"
+    image.write_bytes(b"edited image")
+    with pytest.raises(ValueError, match="Đầu vào fixture đã đổi"):
+        prepare_scored(root)
+    assert image.read_bytes() == b"edited image"
+    existing = tmp_path / "existing"
+    existing.mkdir()
+    (existing / "annotations.json").write_text("user labels")
+    with pytest.raises(ValueError, match="Thư mục đã có dữ liệu khác"):
+        prepare_scored(existing)
+    assert (existing / "annotations.json").read_text() == "user labels"
 
 
 @pytest.mark.parametrize("wrong_readback", [False, True])

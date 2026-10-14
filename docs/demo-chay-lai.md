@@ -1,277 +1,215 @@
-# Chạy lại demo review M13
+# Dựng lại demo review M13
 
-Nhánh bàn giao: `feat/tuanh-review-that`, dựa trên develop `4af8938`.
-Code đã được kiểm để nộp qua nhánh riêng; chưa merge vào `develop`/`main`.
+Chạy lệnh từ gốc repo. Hướng dẫn dùng cấu hình và ID của máy đang cài; không chép
+DB, credentials hay mapping từ máy khác. Bằng chứng của từng phiên thuộc mô tả PR
+và dữ liệu local, không thuộc tiến độ chung. Việc chưa merge chưa được tính Done.
 
-**Đã thực hiện:** tải và kiểm hash gói Cường, giải nén cô lập, khôi phục Python
-3.11.17 ở `data/runtime/python311-stable`, giữ thư viện của `.venv`, kiểm các artifact
-của hai queue `rule-v1.2` và `rule-v1.2-goc` (10.000 ảnh). File ảnh chưa có;
-người dùng đã yêu cầu bỏ ZIP ảnh Sơn. CVAT đã trả HTTP 200 tại `localhost:8080`.
-Import, mapping và review thật bên dưới còn
-chờ thư mục ảnh tương ứng. Không coi bước hướng dẫn là nghiệm thu runtime.
+## 1. Môi trường và cấu hình máy
 
-## Giao diện mới: bảng QC bật/tắt trong CVAT
-
-Vẫn là Chrome extension: không cài thêm hoặc sửa source CVAT. Nạp/Reload extension,
-reload trang CVAT, ghim biểu tượng QC trên thanh công cụ Chrome. Bấm biểu tượng để
-mở bảng, bấm lại để đóng; có nút QC nổi trong job và nút đóng trong bảng. Click
-ngoài, kéo box, Save và chuyển frame không làm bảng tự đóng. Bảng rộng mặc định
-390px, kéo cạnh trái để thay đổi; đóng bảng không che chuột CVAT. Reload trang giữ
-trạng thái của tab. Timer dừng khi thao tác trong bảng, đổi frame hoặc mất focus;
-phím 1/2/3 chỉ ghi verdict khi focus bên trong bảng.
-
-Demo mới, task/DB riêng: http://localhost:8080/tasks/7/jobs/7, API cổng **8003**.
-Task 6 và API 8002 trước đó được giữ nguyên. Ba ảnh tổng hợp; pipeline chạy thật
-luật `edge_no_trunc`, không có detector/Gemini/ML và không phải pilot người thật.
-
-Thử ngay:
-
-1. `chrome://extensions` → Reload M13 Review Queue (nếu chưa có: Load unpacked →
-   chọn thư mục `extension/`). **Reload cả trang CVAT** để nạp content script mới.
-2. Mở job 7 ở trên, ghim icon QC trên Chrome rồi bấm. Có thể bấm nút QC nổi trong
-   job nếu chưa ghim. Ngoài job CVAT, extension không mở bảng.
-3. Bảng → ⚙: API `http://127.0.0.1:8003`, reviewer `Tú Anh`, phiên
-   `tuanh-overlay-01`, batch trống, priority → Lưu cài đặt.
-4. Chọn `fixture-ui-01`: 100 điểm. Kéo cả box sang phải để rời mép trái. Khi chưa
-   Save, bấm QC vẫn kiểm nhãn cũ. Bấm Save trong CVAT, rồi nút **Kiểm tra nhãn đã
-   lưu**: phải thấy 100→0 và phiên bản mới. Không cần bấm hai nút riêng.
-5. Mở Tọa độ và chi tiết để xem Box 1/car, chọn evidence hoặc nhập ghi chú nếu cần.
-   Chọn Xác nhận lỗi/Cảnh báo nhầm/Bỏ qua và mở Thống kê phiên.
-6. Bấm icon QC lần nữa hoặc ✕ để đóng. Click canvas khi bảng đóng phải thao tác
-   được. Mở lại, chuyển frame hoặc reload: trạng thái/selection phải được khôi phục.
-
-API đang chạy. Nếu đã tắt, mở terminal mới và chạy (mỗi DB chỉ một process):
+Trên máy mới có Python 3.11 hoặc 3.12 và uv:
 
 ```bash
-cd /home/nguyen-tu-anh/Documents/qc2d_auto_assistant
-set -a
-source data/cvat-runtime/account.env
-source data/cvat-overlay-validation/demo/runtime.env
-set +a
-.venv/bin/python -m src.cli serve --port 8003
-```
-
-Gói extension: `data/cvat-overlay-validation/extension.zip` gồm 11 file, đủ logo,
-icon PNG và content script; không có env/DB/credentials. Máy khác nạp extension
-như bình thường, cấu hình API/CVAT riêng và sinh lại mapping bằng ID của máy đó.
-Chưa nghiệm thu cài trên máy thứ hai.
-
-Kiểm cuối: **159 passed, 5 skipped; Ruff sạch**. Bộ kiểm phần sửa có **12 passed**,
-gồm 3 test Chromium. Kết quả ở `data/cvat-overlay-validation/verification.json`.
-
-Bằng chứng CVAT thật: `data/cvat-overlay-validation/live-verification.json`,
-`overlay-before.png`, `overlay-after.png`. Test Chrome bổ sung kiểm backend chưa
-sẵn sàng, retry/mất phản hồi, đóng/mở/reload giữa lúc chờ QC không tạo request trùng,
-focus/timer và phím CVAT bên ngoài bảng; transport CVAT trong các test này là mock.
-Thay giao diện không tăng tỷ lệ nghiệm thu 5/8, không thay thuật toán hoặc contracts.
-
-## Luồng đã kiểm trước khi đổi giao diện (ảnh fixture)
-
-Task riêng: http://localhost:8080/tasks/6/jobs/6. API riêng: cổng 8002.
-Ba ảnh tổng hợp 1280×720, không có detector predictions, không phải ảnh BDD.
-Đã kiểm bằng Chromium + extension thật: mapping 3 frame, ảnh/evidence, đọc nhãn
-đã Save, kéo box bằng chuột trong CVAT, Save bằng nút giao diện, rule
-`edge_no_trunc` chấm **100 → 0 → 100** với snapshot/version mới, verdict/timer
-và restart API giữ nguyên model/verdict. Trước Save vẫn đọc nhãn cũ; sau Save
-điểm vẫn 100 cho tới khi chủ động chấm lại. Chạy lại prepare/connect giữ nguyên
-task, annotations đã sửa và mapping. Verdict tự động thuộc development, không
-được dùng làm pilot. Dữ liệu của các task trước được giữ nguyên.
-
-Bằng chứng: `data/cvat-ui-validation/live-verification.json`,
-`panel-before.png`, `cvat-after-save.png`, `panel-after-recheck.png`.
-Ảnh đầu đã được kéo về sát mép và chấm lại 100 để người dùng thử từ đầu.
-
-1. Mở Chrome, đăng nhập CVAT, mở job trên.
-2. `chrome://extensions` → Reload M13. Nếu chưa có extension: Developer mode →
-   Load unpacked → chọn thư mục `extension/` của repo.
-3. Mở panel M13 → Cài đặt: API `http://127.0.0.1:8002`, reviewer `Tú Anh`, phiên
-   `tuanh-ui-test-01` (lần thử khác dùng tên phiên mới), batch trống, priority.
-4. Chọn `fixture-ui-01`: 100 điểm, box xanh kéo dài đến mép trái. Kéo **cả box**
-   sang phải khoảng 150 pixel ảnh để không chạm mép. Bấm Save trong CVAT.
-5. Panel → Đọc nhãn đã Save → Box 1/car có x1 lớn hơn 2 → Kiểm tra lại lỗi:
-   phải thấy `100.0 → 0.0 điểm`. Luật demo chỉ kiểm chạm mép không truncated;
-   không chứng minh box đã ôm sát vật thể.
-6. Chọn verdict, mở Thống kê phiên. API root `/` không có giao diện;
-   `http://127.0.0.1:8002/docs` là màn hình kiểm API.
-
-API đã được để chạy. Nếu sau này API tắt, mở terminal mới và chạy:
-
-```bash
-cd /home/nguyen-tu-anh/Documents/qc2d_auto_assistant
-set -a
-source data/cvat-runtime/account.env
-source data/cvat-ui-validation/demo/runtime.env
-set +a
-.venv/bin/python -m src.cli serve --port 8002
-```
-
-Chỉ chạy một API cho DB này. Để tự kiểm restart, Ctrl+C ở đúng terminal trên,
-chạy lại cùng lệnh, Reload panel: model, snapshot và verdict phải còn.
-BDD 10 ảnh, pilot người thật và dựng máy sạch vẫn chưa nghiệm thu.
-
-**1. Môi trường và bộ dữ liệu**
-
-```bash
-cd /home/nguyen-tu-anh/Documents/qc2d_auto_assistant
+uv venv --python 3.11
 source .venv/bin/activate
-python --version
+uv pip install -e ".[dev,demo,guideline,browser]"
 ```
 
-Python phải là 3.11/3.12 đúng `pyproject.toml`. Phiên này phục hồi 3.11.17; không
-thay Python hệ thống và không xoá `.venv` hoặc `.env`. Runtime lưu trong repo/data
-để không phụ thuộc interpreter trong `/tmp`.
+Máy đã có môi trường hoạt động chỉ activate/cập nhật dependency; không tạo lại
+`.venv`. Chạy kiểm tra theo mục 8. Docker Engine và Compose chỉ cần cho CVAT.
 
-ZIP đã tải: `data/downloads/m13-data-2018-14-10.zip`.
-SHA256: `115136f31cff8658e1617fbb9835854f0c7fbeb88958dbf53350c932f7359da6`.
-
-Nếu chưa giải nén, chạy một lần:
+Đặt URL/cổng theo máy của bạn. Các giá trị dưới là mặc định local dùng chung,
+không phải ID/cổng của phiên nghiệm thu. Nếu bị chiếm, chọn cổng khác.
 
 ```bash
-python -m src.cli review-unpack data/downloads/m13-data-2018-14-10.zip \
-  --out data/m13-input-2018
-sha256sum data/m13-input-2018/data/bdd100k/labels/det_20/det_val.json
+export M13_CVAT_URL=http://localhost:8080
+export M13_API_PORT=8000
+```
+
+Extension chỉ hỗ trợ HTTP localhost/127.0.0.1. CVAT thường định tuyến theo hostname
+`localhost`; dùng đúng hostname được cấu hình. API và CVAT là hai dịch vụ riêng.
+
+Tài khoản CVAT đặt trong môi trường terminal chạy import/API. Có thể dùng file
+riêng không nằm trong Git chứa `CVAT_USER` và `CVAT_PASSWORD`, rồi source file đó
+với `set -a`/`set +a`. Không đưa mật khẩu vào lệnh, ảnh chụp hoặc package. Gemini
+không cần cho demo fixture; key phục vụ guideline đọc từ môi trường riêng.
+
+## 2. CVAT hiện có hoặc máy mới
+
+Nếu đã có CVAT, giữ nguyên stack/volumes và đăng nhập ở `$M13_CVAT_URL`; bỏ bước dựng
+mới. Nếu source bind mount đã mất, chỉ dùng `cvat-restore-source --out <source-dir>`
+sau khi kiểm đúng đường dẫn nguồn; công cụ không ghi đè nội dung khác.
+
+Trên máy mới, chuẩn bị bộ Compose ghim phiên bản từ `configs/cvat-install.yaml`.
+Chọn project và cổng mới, khác stack đang dùng:
+
+```bash
+python -m src.cli cvat-prepare --out data/cvat-install
+python -m src.cli cvat-preflight data/cvat-install --out data/cvat-preflight.json
+docker compose -f data/cvat-install/docker-compose.yml config --quiet
+```
+
+Đọc `install.json` để lấy project/cổng thật. Chỉ khi quyền Docker, tài nguyên và
+cổng cho phép mới chạy:
+
+```bash
+docker compose -f data/cvat-install/docker-compose.yml up -d
+docker compose -f data/cvat-install/docker-compose.yml exec cvat_server \
+  python manage.py createsuperuser
+```
+
+Sau đó đặt lại `$M13_CVAT_URL` theo cổng của bộ cài. Tài khoản tạo tương tác, không
+lưu mật khẩu trong hướng dẫn. Không dùng `down -v`. Kiểm Compose không đồng nghĩa
+đã dựng mới thành công. Bộ cài không phục hồi dashboard analytics đã mất.
+
+## 3. Fixture: chạy UI và phép kiểm thật khi chưa có ảnh BDD
+
+Chọn thư mục mới. Lệnh sau tạo 3 ảnh tổng hợp, nhãn, queue/evidence/manifest và gói
+extension; không tạo detector predictions:
+
+```bash
+python -m src.cli review-fixtures --scored --out data/demo-qc --url "$M13_CVAT_URL"
+python -m src.cli review-connect data/demo-qc/review \
+  --url "$M13_CVAT_URL" --name m13-qc-fixture
+```
+
+Task mới và ID thật được ghi trong `data/demo-qc/review/review.json`. Tên task phải
+chưa tồn tại; retry dùng cùng tên/task đã đăng ký, không ghi lại annotations.
+Chạy lại `review-fixtures --scored` giữ DB/mapping/queue và từ chối nguồn đã sửa.
+
+```bash
+source data/demo-qc/review/runtime.env
+python -m src.cli doctor --verify-cvat --out data/demo-qc/doctor.json
+python -m src.cli serve --port "$M13_API_PORT"
+```
+
+Chỉ rule `edge_no_trunc` chạy trên ảnh tổng hợp, dùng tham số của config. Nó kiểm
+chạm mép nhưng thiếu truncated; không kiểm box ôm sát hình chiếc xe. Ảnh đầu có
+điểm dương. Sau khi kéo box rời mép, Save và QC lại thì điểm về 0. Đây không phải
+nghiệm thu detector, guideline, BDD hoặc pilot.
+
+`demo-prepare --image <JPEG/PNG>` là lựa chọn ảnh chưa có nhãn: queue
+manual-unscored, không có điểm QC. `review-fixtures` không có `--scored` là fixture
+UI cũ có predictions tổng hợp được đánh dấu; không dùng chúng làm detector thật.
+
+## 4. 10 ảnh BDD khi đã có dữ liệu tương ứng
+
+Lấy bundle nhóm đã chốt và thư mục ảnh BDD2018 tương ứng từ Sơn. Không thay bằng
+ảnh khác hoặc đổi tên ảnh. Giải nén bundle vào thư mục mới:
+
+```bash
+python -m src.cli review-unpack <bundle.zip> --out data/input
+sha256sum data/input/data/bdd100k/labels/det_20/det_val.json
 ```
 
 Checksum nhãn phải là
 `f7cde1a3bc064b2cbd2ffbcf58b29889e7396f4a4176fd17e3d93e08dfb4ff00`.
-`review-unpack` từ chối thư mục đã có, path traversal, symlink, entry trùng và
-file private. Thư mục `data/m13-input-2018` đã có trên máy này: không giải nén lại.
-
-**2. Chuẩn bị batch review khi có ảnh**
-
-Đặt `M13_INPUT_IMAGES` là thư mục chứa các file ảnh gốc theo image_id của BDD.
-Không đổi tên ảnh khác để ghép vào queue. Chuẩn bị 50 ảnh đầu của `rule-v1.2`:
+Đặt `M13_INPUT_IMAGES` đến thư mục ảnh trên máy; đường dẫn này chỉ nằm trong cấu
+hình local. Queue mặc định `rule-v1.2` ở `configs/review_acceptance.yaml`. Nếu
+Cường chốt queue khác, dùng `--queue` trỏ CSV cùng manifest và artifact tương ứng.
 
 ```bash
-M13_INPUT_IMAGES=/duong/dan/toi/thu-muc-anh-val
-python -m src.cli review-prepare --bundle data/m13-input-2018 \
-  --images "$M13_INPUT_IMAGES" --out data/review-real-50 --purpose real
+python -m src.cli review-prepare --bundle data/input --images "$M13_INPUT_IMAGES" \
+  --out data/review-10 --limit 10 --purpose real --url "$M13_CVAT_URL"
+python -m src.cli review-connect data/review-10 --url "$M13_CVAT_URL" --name m13-bdd-review
+source data/review-10/runtime.env
+python -m src.cli doctor --verify-cvat --out data/review-10/doctor.json
+python -m src.cli serve --port "$M13_API_PORT"
 ```
 
-Công cụ kiểm hash source, checksum nhãn gốc, đúng số ảnh, kích thước 1280×720 và
-khớp queue/evidence/features. Nó lấy **labels snapshot từ manifest**, giữ nguyên
-điểm/lý do và ghi rõ `scores_recomputed: false`. `annotation_kind` phân biệt snapshot
-gốc với nhãn đã thay đổi/tiêm lỗi. Queue demo này có thể dùng lỗi tiêm; số review đó
-không tự trở thành đánh giá lỗi thật của nhãn gốc.
+Công cụ kiểm hash, ảnh 1280×720, đúng tập ID, evidence/features và labels snapshot.
+Không tự tính lại điểm khi chuẩn bị; không thay snapshot bằng nhãn khác. Snapshot
+đã tiêm lỗi được nhận diện khác nhãn gốc. Queue không có manifest không thể recheck.
+Ghi bảng từng ảnh: image_id, frame/ảnh đúng, evidence đúng box, verdict lưu, timer,
+Save/recheck, lỗi tích hợp. Chưa có ảnh thì bảng phải để chưa kiểm.
 
-Batch có ảnh, labels, features, predictions, evidence, manifest và extension.zip;
-`runtime.env` chỉ chứa cấu hình, không chứa credentials. DB/mapping nằm riêng trong
-batch. Chạy lại giữ nguyên dữ liệu, từ chối artifact/cấu hình đã đổi và nguồn khác.
+## 5. Chrome extension, QC và restart
 
-**3. Bật CVAT hiện có, import và mapping riêng**
+Nạp thư mục `extension/` hoặc giải nén gói extension của batch. Trong
+`chrome://extensions`: Developer mode → Load unpacked. Khi code đổi: Reload
+extension **và reload trang CVAT**. Ghim icon QC trên thanh Chrome.
 
-Bật lại stack CVAT theo bộ Compose đã ghim phiên bản/project trên máy đó, mở
-`http://localhost:8080`. Bước bật stack chưa kiểm trong phiên này; không tạo lại
-volumes hoặc dùng `down -v`. Xem các lệnh `cvat-restore-source`, `cvat-preflight`
-và cấu hình `configs/cvat-install.yaml` nếu source Compose đã mất.
+Mở job theo task/ID trong `review.json`. Bấm icon QC hoặc nút QC nổi để mở bảng;
+bấm icon lần nữa hoặc nút đóng để đóng. Click ngoài, kéo box, Save/chuyển frame
+không đóng bảng. Kéo cạnh trái bảng để đổi chiều rộng.
 
-Thiết lập `CVAT_USER`, `CVAT_PASSWORD` trong terminal bằng cấu hình riêng của máy;
-không đưa vào lệnh chụp màn hình, Git hoặc package. Khi CVAT và credentials sẵn sàng:
+Bảng → ⚙: API `http://127.0.0.1:<M13_API_PORT>`, reviewer thật, session riêng, batch
+trống, priority → Lưu. Chọn ảnh từ hàng đợi. Sửa → **Save trong CVAT** → **Kiểm tra
+nhãn đã lưu**. Nút QC đọc tọa độ đã Save rồi chấm lại bằng backend; tạo version và
+snapshot mới. Nhãn chưa Save bị bỏ qua. Backend thiếu/bị chặn thì báo lý do và giữ
+điểm cũ. Điểm 0 chỉ là chưa phát hiện lỗi qua phép kiểm đang bật.
+
+Ba verdict: Xác nhận lỗi/error, Cảnh báo nhầm/false_alarm, Bỏ qua/skip. Có chọn box
+và ghi chú trong phần chi tiết. Phím 1/2/3 chỉ hoạt động khi focus trong bảng;
+timer dừng khi focus bảng, sai frame hoặc mất focus cửa sổ/tab. Verdict không thay
+Save nhãn, điều hướng ảnh không tự ghi verdict. Thống kê có trong bảng; API root
+không phải giao diện, dùng `/docs` để kiểm API.
+
+Restart bằng Ctrl+C trong đúng terminal API này rồi source lại cùng runtime.env
+và chạy cùng lệnh serve. Không xoá DB và không chạy hai API cho cùng DB. Queue
+active, version, snapshot và verdict phải còn sau restart. Với queue đã đổi, dùng
+`/stats?queue_id=<snapshot-id>` để xem thống kê lịch sử.
+
+## 6. Audit còn chờ Long
+
+Code hiện chèn một ảnh nửa dưới sau mỗi 10 ảnh ưu tiên, seed từ config. Đây chưa
+phải định nghĩa cuối. Cần Long chốt vùng lấy mẫu, tỷ lệ/mẫu số và cách trộn trước
+khi sửa policy. Không tự chọn tỷ lệ hoặc đánh dấu ảnh audit trên giao diện.
+
+## 7. Pilot 30 ảnh: chỉ người thật mới đăng ký
+
+Chuẩn bị từ queue nhãn gốc `rule-v1.2-goc`, cùng 30 ảnh, hai task/DB riêng:
 
 ```bash
-python -m src.cli review-connect data/review-real-50 \
-  --name m13-bdd2018-review-top50
-source data/review-real-50/runtime.env
-python -m src.cli doctor --verify-cvat
-python -m src.cli serve --port 8002
+python -m src.cli review-prepare --bundle data/input --images "$M13_INPUT_IMAGES" \
+  --out data/pilot-a --pilot --purpose real --url "$M13_CVAT_URL"
+python -m src.cli review-prepare --bundle data/input --images "$M13_INPUT_IMAGES" \
+  --out data/pilot-b --pilot --purpose real --url "$M13_CVAT_URL"
+python -m src.cli review-connect data/pilot-a --url "$M13_CVAT_URL" --name m13-pilot-priority
+python -m src.cli review-connect data/pilot-b --url "$M13_CVAT_URL" --name m13-pilot-file
 ```
 
-Task mới được lưu trong `review.json` trước bước sync. Retry sau lỗi sync dùng lại
-task này, không ghi lại annotations. Nếu mapping đọc lại khác thì từ chối ghi đè.
-DB mới là `data/review-real-50/review.db`; các DB/task demo cũ được giữ nguyên.
-Đổi cổng bằng `review-prepare --url ...` và dùng cùng URL ở `review-connect --url ...`.
-
-**4. Extension, Save, recheck và stats**
-
-Giải nén extension.zip vào thư mục mới hoặc nạp `extension/` bằng Chrome
-`chrome://extensions` → Developer mode → Load unpacked. Reload extension khi code
-đổi. Trong panel, đặt API `http://127.0.0.1:8002`, reviewer thật, session riêng,
-batch trống, thứ tự priority.
-
-Kiểm 10 ảnh đầu và ghi vào bảng: image_id, đúng frame, đúng box evidence, đọc được
-lý do, verdict lưu, timer, Save/recheck. Bảng trong
-`data/tuanh-review-validation/ten-image-checklist.csv` là **mẫu chưa kiểm**, không
-phải kết quả nghiệm thu.
-
-Sau khi sửa và Save trong CVAT: bấm Đọc nhãn đã Save, đối chiếu tọa độ, rồi Kiểm tra
-lại lỗi. Phải có version/queue mới; điểm có thể giữ nguyên nếu phép kiểm cho cùng
-kết quả. API giữ source queue, snapshot và verdict lịch sử. Thiếu manifest hoặc
-nguồn bị sửa thì từ chối chấm lại. Verdict không thay thao tác Save nhãn.
-
-Ba nút: Lỗi thật / Bot nhầm / Bỏ qua; phím 1/2/3. Timer dừng khi mất focus hoặc đổi
-frame. Xem thống kê trong panel hoặc `http://127.0.0.1:8002/stats`. Stats mặc định
-thuộc queue hiện tại; dùng `?queue_id=<id-cu>` để xem thống kê snapshot lịch sử.
-
-Restart: dừng **API riêng này**, source lại cùng runtime.env và chạy lại cùng lệnh
-serve. Không xoá DB. Phiên bản đang phục vụ được phục hồi từ DB, không quay về queue
-ban đầu. Giữ API một process cho mỗi DB.
-
-**5. Pilot 30 ảnh: hai task, hai người**
-
-Để kiểm nhãn gốc, chuẩn bị hai batch từ `rule-v1.2-goc` với `--pilot`:
-
-```bash
-python -m src.cli review-prepare --bundle data/m13-input-2018 \
-  --images "$M13_INPUT_IMAGES" --out data/pilot-a --pilot --purpose real
-python -m src.cli review-prepare --bundle data/m13-input-2018 \
-  --images "$M13_INPUT_IMAGES" --out data/pilot-b --pilot --purpose real
-python -m src.cli review-connect data/pilot-a --name m13-pilot-priority
-python -m src.cli review-connect data/pilot-b --name m13-pilot-file
-```
-
-Hai batch lấy cùng 30 ảnh đầu của queue nhãn gốc, cùng CSV/nhãn ban đầu, nhưng DB,
-mapping và task riêng. `--pilot` không đăng ký người hoặc xác nhận human_pilot.
-Nếu nhóm chọn batch khác, truyền queue nhãn gốc phù hợp; ghi đúng cách chọn batch.
-
-Chỉ khi người dùng và Cường đã chọn hai reviewer khác nhau mới tạo plan JSON cho
-từng người với: reviewer, session_id, comparison_id và order (`priority` hoặc
-`file`). Hai plan cùng comparison_id. Thứ tự file trong API là thứ tự image_id.
-
-Ở terminal A, source runtime.env của pilot-a, đăng ký người A rồi chạy API cổng 8002;
-ở terminal B làm tương tự với pilot-b, người B, cổng 8003. Nếu cổng đã dùng thì
-chọn cổng khác. Mỗi reviewer đặt API/session/order đúng với plan trong panel.
+Cường và Tú Anh chọn hai người khác nhau, chưa xem chính batch đó. Mỗi người tạo
+plan JSON local có reviewer, session_id, comparison_id, order (`priority` hoặc
+`file`); cùng comparison_id. File order là thứ tự image_id. Không review cùng
+batch hai lần bằng cùng người. Mỗi terminal source runtime.env của đúng arm.
+Chỉ người dùng chủ động xác nhận trước khi đo:
 
 ```bash
 source data/pilot-a/runtime.env
 python -m src.cli pilot-register --plan data/pilot/plan-a.json --confirm-human
-python -m src.cli serve --port 8002
+python -m src.cli serve --port "$M13_API_PORT"
 ```
 
-Người dùng chủ động chạy `--confirm-human`; agent không chạy thay. Không review
-batch hai lần bằng cùng một người. Sau đăng ký giữ nguyên queue; recheck bị chặn
-trong DB pilot để bảo toàn snapshot. Việc chấm lại sau đó dùng DB review riêng.
-
-Sau review, export theo từng DB/session (thay SESSION_A/B bằng session đã đăng ký):
+Arm B dùng runtime.env/plan-b và cổng API khác. Đặt reviewer/session/order đúng
+plan trong bảng. Queue pilot đóng băng; recheck bị chặn để giữ snapshot. Các phiên
+fixture/development không được đăng ký thành human_pilot. Sau khi review:
 
 ```bash
 source data/pilot-a/runtime.env
-python -m src.cli pilot-export --out data/pilot/export-a.csv --session-id SESSION_A
+python -m src.cli pilot-export --out data/pilot/export-a.csv --session-id <session-a>
 source data/pilot-b/runtime.env
-python -m src.cli pilot-export --out data/pilot/export-b.csv --session-id SESSION_B
-python -m src.cli pilot-compare --out data/pilot/compare.json \
-  data/pilot/export-a.summary.json data/pilot/export-b.summary.json
+python -m src.cli pilot-export --out data/pilot/export-b.csv --session-id <session-b>
+python -m src.cli pilot-compare data/pilot/export-a.summary.json \
+  data/pilot/export-b.summary.json --out data/pilot/compare.json
 ```
 
-Export ghi CSV **kèm summary JSON**; compare đọc summary, không đọc CSV. Báo số
-phút, ảnh lỗi và skip; skip không tính là nhãn đúng. Chỉ phiên đã đăng ký human_pilot
-được đưa vào export mặc định. 30 ảnh/tốc độ hai người chỉ cho kết quả mô tả.
-Gửi dữ liệu qua Drive, không commit. Không có phiên người thật nào được đo bởi agent.
+Export tạo CSV **và summary JSON**; compare đọc summary. Gửi export/summary/compare
+qua Drive và số phút, số ảnh lỗi, skip trong PR; không commit. Retry không tạo
+verdict trùng, skip không tính là nhãn đúng. Hai người có tốc độ khác nhau, kết
+quả nhỏ này chỉ mô tả. Agent không đăng ký hoặc tạo số liệu pilot người thật.
 
-**6. Kiểm tra code và phần còn chờ**
+## 8. Kiểm tra trước bàn giao
 
 ```bash
-python -m pytest -q
-.venv/bin/ruff check .
-PLAYWRIGHT_BROWSERS_PATH="$PWD/data/runtime/browsers" M13_BROWSER_TESTS=1 \
-  python -m pytest -q tests/test_extension_browser.py tests/test_guideline_editor_browser.py
+python .github/scripts/check_repo.py
+ruff check .
+pytest -q
+playwright install chromium
+M13_BROWSER_TESTS=1 pytest -q -rs tests/test_extension_browser.py tests/test_guideline_editor_browser.py
+python -m src.cli extension-pack --out data/extension.zip
 ```
 
-Phiên này: pytest **159 passed, 5 skipped** trong 21.76 giây; Chromium **3 passed**
-trong 27,24 giây; Ruff và diff check sạch. Kết quả/thời gian test mới được ghi trong
-`data/tuanh-review-validation/verification.json`.
-Thời gian tải/khôi phục chưa được đo riêng. Bộ test browser riêng dùng transport mock; luồng giao diện bổ sung phía trên đã
-chạy với CVAT thật và ảnh tổng hợp. Chưa kiểm 10 ảnh BDD trên CVAT thật.
-
-Audit giữ nguyên vì Long chưa chốt tỷ lệ/mẫu số/cách trộn. Chưa có ảnh, import batch
-BDD, pilot người thật hoặc nghiệm thu dựng máy sạch. Tài liệu này ghi các lệnh đã
-kiểm cú pháp/CLI và quy trình dự kiến; các bước runtime cần được chạy và ghi bổ sung.
+Browser tests dùng transport CVAT mock; muốn nghiệm thu runtime phải kiểm task
+fixture mới hoặc batch BDD thực tế và ghi bằng chứng riêng. Thời gian cài, import
+và review chưa được đo trên máy của người đọc. Không coi hướng dẫn là nghiệm thu
+máy sạch; không coi môi trường cô lập trên cùng máy là máy thứ hai.

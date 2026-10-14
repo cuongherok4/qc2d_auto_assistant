@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shlex
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -84,3 +85,70 @@ def prepare(out: Path | None = None) -> dict:
         "environment": str(env),
         "note": "Queue dùng hard_condition; predictions/box chỉ là fixture, chưa có detector/QC thật",
     }
+
+
+def prepare_scored(out: Path, *, cvat_url: str | None = None) -> dict:
+    """Reproducible real-rule demo on synthetic images, with no invented predictions."""
+    from PIL import Image, ImageDraw
+
+    from src import pipeline
+    from src.api.review_setup import prepare as prepare_review
+    from src.api.saved_labels import atomic_json
+
+    folder = out.resolve()
+    version = "rule-fixture-qc-v1"
+    marker = folder / "fixture.json"
+    if folder.exists():
+        if not marker.is_file():
+            raise ValueError("Thư mục đã có dữ liệu khác; chọn --out mới, không ghi đè")
+        saved = json.loads(marker.read_text())
+        if saved.get("kind") != "synthetic_rule_fixture":
+            raise ValueError("Không phải fixture QC của công cụ này")
+        for name, digest in saved["files"].items():
+            path = folder / name
+            if not path.resolve().is_relative_to(folder) or pipeline.sha256(path) != digest:
+                raise ValueError("Đầu vào fixture đã đổi; giữ nguyên, chọn thư mục mới")
+    else:
+        folder.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=folder.parent) as temp:
+            stage = Path(temp) / "fixture"
+            (stage / "images").mkdir(parents=True)
+            frames = []
+            for number in range(1, 4):
+                name = f"fixture-qc-{number:02d}.jpg"
+                image = Image.new("RGB", (contracts.IMG_W, contracts.IMG_H), (225, 235, 245))
+                draw = ImageDraw.Draw(image)
+                draw.rectangle((150, 180, 350, 380), fill=(70, 155, 90), outline="black", width=4)
+                draw.text((160, 250), "CAR - FIXTURE", fill="white")
+                draw.text((30, 30), "SYNTHETIC FIXTURE - NOT BDD / NO DETECTOR", fill="black")
+                image.save(stage / "images" / name)
+                frames.append({"name": name, "labels": [{
+                    "id": str(number), "category": "car",
+                    "box2d": {"x1": 0 if number == 1 else 150, "y1": 180, "x2": 350, "y2": 380},
+                    "attributes": {"occluded": False, "truncated": False},
+                }]})
+            manifest = pipeline.publish(
+                frames, stage / "source", version, names=["edge_no_trunc"],
+                weights=config.load("weights")["signals"], options=config.load("pipeline"),
+                provenance={"kind": "synthetic_rule_fixture", "real_detector": False},
+            )
+            # Publish immutable inputs atomically, with paths of the final location.
+            for key in ("queue", "evidence", "labels", "features", "manifest"):
+                manifest[key + "_file"] = pipeline.portable(
+                    folder / Path(manifest[key + "_file"]).relative_to(stage)
+                )
+            atomic_json(stage / "source" / f"ranked_queue_{version}.manifest.json", manifest)
+            atomic_json(stage / "fixture.json", {
+                "kind": "synthetic_rule_fixture", "files": {
+                    str(p.relative_to(stage)): pipeline.sha256(p)
+                    for p in stage.rglob("*") if p.is_file()
+                },
+            })
+            stage.rename(folder)
+    record = prepare_review(
+        folder / "source" / f"ranked_queue_{version}.csv", folder / "images", folder / "review",
+        source_root=folder, limit=3, purpose="development", cvat_url=cvat_url,
+    )
+    return {"fixture": True, "real_detector": False, "scored_qc": True, "images": record["images"],
+            "folder": str(folder / "review"), "environment": str(folder / "review" / "runtime.env"),
+            "note": "Chỉ rule edge_no_trunc trên ảnh tổng hợp; không kiểm box ôm sát vật thể"}

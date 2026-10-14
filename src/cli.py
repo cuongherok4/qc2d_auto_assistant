@@ -296,9 +296,14 @@ def cmd_pilot_compare(args) -> int:
 
 
 def cmd_review_fixtures(args) -> int:
-    from src.api.fixtures import prepare
+    from src.api.fixtures import prepare, prepare_scored
 
-    print(json.dumps(prepare(args.out), ensure_ascii=False, indent=2))
+    if args.scored:
+        folder = args.out or config.ROOT / config.load("review")["fixture_dir"] / "scored"
+        result = prepare_scored(folder, cvat_url=args.url)
+    else:
+        result = prepare(args.out)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -542,6 +547,8 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(fn=cmd_pilot_compare)
     p = sub.add_parser("review-fixtures", help="tạo 3 ảnh tổng hợp/nhãn/queue/evidence để kiểm API và CVAT")
     p.add_argument("--out", type=Path)
+    p.add_argument("--scored", action="store_true", help="rule thật trên ảnh tổng hợp, không tạo predictions")
+    p.add_argument("--url", help="CVAT của máy đích khi dùng --scored")
     p.set_defaults(fn=cmd_review_fixtures)
     p = sub.add_parser("cvat-import", help="nạp ảnh trong queue và nhãn 2D BDD vào task CVAT MỚI")
     p.add_argument("--name", required=True)
