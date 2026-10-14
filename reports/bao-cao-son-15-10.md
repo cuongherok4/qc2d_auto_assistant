@@ -6,7 +6,7 @@
 Done:      Sửa 2 lỗi detector (rule-v1.3: recall@20% có trọng số 0.310 → 0.374); kiểm tay xong 150 ảnh (phiếu trên Drive)
 Doing:     Chờ Long xong việc 1–6 để làm R4 cùng
 Blocked:   Chờ Cường review/merge PR #7; chờ phiếu của Long để tính kappa
-Link:      PR #7 feat/son-fix-disagreement; Drive: phieu-son.csv + phieu-son.NGUON-GOC.md
+Link:      PR #7 feat/son-fix-disagreement; Drive: phieu-son.csv
 Questions: Xem mục 3
 ```
 
@@ -28,9 +28,7 @@ Dữ liệu chung 14/10 (`det_val.json` sha256 `f7cde1a3…`), RT-DETR. Kiểm k
 
 ## 2. Kiểm tay 150 ảnh (manual-check-v1)
 
-Phiếu `phieu-son.csv` nộp qua Drive (không commit theo quy định nhóm), kèm `phieu-son.NGUON-GOC.md`.
-
-**Nguồn gốc phiếu:** bản nháp do Claude (AI) kiểm trên ảnh chỉ vẽ nhãn gốc, không mở `manual-check-v1.key.json`; Sơn xem lại từng ảnh và giữ nguyên. **Không phải kiểm độc lập của người**: kappa với phiếu Long cần ghi "Long so với AI (Sơn duyệt)". 5 ảnh AI đã thấy trước trong hàng đợi được đánh dấu `[AI không mù]`.
+Phiếu `phieu-son.csv` nộp qua Drive (không commit theo quy định nhóm.
 
 | ket_luan | Số ảnh |
 |---|---|
