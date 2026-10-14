@@ -1,13 +1,40 @@
 name: ci
+# Chạy trên mọi nhánh được push và mọi PR: thành viên thấy kết quả ngay khi push nhánh feat/*,
+# trước khi mở PR vào develop.
 on:
-  push: {branches: [main, develop]}
+  push:
   pull_request:
+    branches: [main, develop]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  repo:
+    name: kiểm file commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .github/scripts/check_repo.py
+
   test:
+    name: ruff + pytest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-      - run: uv venv --python 3.11 && uv pip install -e ".[dev]"
+      # không cài extra detector (torch nặng); test cần dữ liệu thật tự bỏ qua
+      - run: uv venv --python 3.11 && uv pip install -e ".[dev,gbm,guideline,demo]"
       - run: .venv/bin/ruff check .
-      - run: .venv/bin/pytest -q
+      - run: .venv/bin/pytest -q -rs
+
+  browser:
+    name: test trình duyệt (extension, guideline UI)
+    runs-on: ubuntu-latest
+    env: {M13_BROWSER_TESTS: "1"}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv venv --python 3.11 && uv pip install -e ".[dev,guideline,browser]"
+      - run: .venv/bin/playwright install --with-deps chromium
+      - run: .venv/bin/pytest -q -rs tests/test_extension_browser.py tests/test_guideline_editor_browser.py

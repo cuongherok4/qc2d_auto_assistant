@@ -87,6 +87,7 @@ def cmd_train_gbm(args) -> int:
 
 
 def cmd_evaluate(args) -> int:
+    from src import pipeline
     from src.eval import evaluate
 
     answer_file = args.answer or config.path("injected_dir") / "injected_errors.json"
@@ -94,7 +95,7 @@ def cmd_evaluate(args) -> int:
     queue = pd.read_csv(args.queue, dtype={"image_id": str, "model_version": str}).fillna({"top_reasons": ""})
     out = args.out or config.path("reports_dir") / f"eval_{queue.model_version.iloc[0]}_{args.split}"
     result = evaluate.comparison(queue, answer, out, split=args.split, top_frac=args.top_frac)
-    result["queue_file"] = str(Path(args.queue).resolve())
+    result["queue_file"] = pipeline.portable(args.queue)
     evaluate.append_result(result, config.path("reports_dir") / "results.jsonl")
     keys = ("recall20_img", "recall20_weighted", "precision20", "ndcg", "time_saved")
     print(pd.read_csv(out / "comparison.csv")[["method", *keys]].to_string(index=False))
