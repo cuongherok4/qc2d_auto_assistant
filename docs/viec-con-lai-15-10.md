@@ -32,7 +32,7 @@ Chi tiết ở [tien-do.md](tien-do.md).
 
 Đã merge vào `develop`: R2/R3, guideline DOCX + đáp án, hướng dẫn kiểm tay (Long); sửa 2 lỗi detector `31642d0` (Sơn,
 bỏ 2 dòng `results.jsonl` chạy trên máy Sơn, Cường chạy lại). CI mới chạy trên mọi nhánh: ruff, pytest, test trình
-duyệt và kiểm file commit (chặn dữ liệu, phiếu, secret, đường dẫn `/home/...`). **Trước khi mở PR: `git merge
+duyệt và kiểm file commit (chặn dữ liệu, phiếu, secret, đường dẫn tuyệt đối trên máy cá nhân). **Trước khi mở PR: `git merge
 origin/develop` vào nhánh của mình và đợi CI xanh.**
 
 Chưa merge: `feat/tuanh-review-that` (CI đỏ vì đường dẫn máy cá nhân, xem việc của Tú Anh).
@@ -59,7 +59,7 @@ Hướng dẫn chi tiết: [huong-dan-tuanh-15-10.html](huong-dan-tuanh-15-10.ht
 
 **Sửa nhánh `feat/tuanh-review-that` để merge được**
 
-1. `docs/demo-chay-lai.md`: bỏ đường dẫn `/home/nguyen-tu-anh/...`, số task/cổng riêng của máy bạn. Tách thành phần
+1. `docs/demo-chay-lai.md`: bỏ đường dẫn tuyệt đối trên máy bạn, số task/cổng riêng của máy bạn. Tách thành phần
    chung (mọi máy làm theo được) và phần ghi chép riêng (để trong mô tả PR).
 2. Bỏ phần thêm vào `docs/tien-do.md`, chuyển sang mô tả PR. `git merge origin/develop`, đợi CI xanh.
 
