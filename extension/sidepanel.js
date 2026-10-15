@@ -1,7 +1,23 @@
 const $ = id => document.getElementById(id);
 let cfg, items = [], selected = null, loading = false, saving = false, pending = null;
 let cursor = 0, generation = 0, selectionGeneration = 0;
-let savedSnapshot = null, recheckPending = null;
+let savedSnapshot = null, recheckPending = null, lastRecheck = null, health = null;
+const embedded = new URL(location.href).searchParams.get("embedded") === "1";
+function hostMessage(type, extra={}) {
+  if(embedded) parent.postMessage({type,...extra}, "*");
+}
+$("close-panel").hidden = !embedded;
+$("close-panel").onclick = () => hostMessage("QC_CLOSE");
+$("settings-toggle").onclick = () => {$("settings").open=!$("settings").open;};
+document.addEventListener("pointerdown",()=>hostMessage("QC_FOCUS",{focused:true}));
+document.addEventListener("focusin",()=>hostMessage("QC_FOCUS",{focused:true}));
+window.addEventListener("message",event=>{
+  if(event.source!==parent || !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(event.origin))return;
+  if(event.data?.type==="QC_VISIBILITY") {
+    document.body.inert=!event.data.visible;
+    if(!event.data.visible)hostMessage("QC_FOCUS",{focused:false});
+  }
+});
 async function worker(message) {
   const reply = await chrome.runtime.sendMessage(message);
   if (!reply?.ok) throw new Error(reply?.error || "Service worker không phản hồi.");
@@ -35,7 +51,12 @@ function actions() {
   $("retry").disabled = saving;
   $("read-saved").disabled = saving || !selected || !!pending || !!recheckPending;
   $("recheck").disabled = saving || !selected || !!pending || (!recheckPending && !savedSnapshot?.backend_ready);
-  $("recheck").textContent = recheckPending ? "Thử kiểm tra lại" : "Kiểm tra lại lỗi";
+  $("recheck").textContent = recheckPending ? "Thử kiểm tra lại" : "Chấm lại snapshot đã đọc";
+  $("run-qc").disabled = saving || !selected || !!pending;
+  $("run-qc").textContent = saving ? "Đang xử lý…" : recheckPending ? "Thử lại yêu cầu QC đang chờ" : "▶ Kiểm tra nhãn đã lưu";
+  const at=items.findIndex(row=>row.image_id===selected?.image_id);
+  $("previous").disabled=saving||!!pending||!!recheckPending||at<=0;
+  $("next").disabled=saving||!!pending||!!recheckPending||at<0||at>=items.length-1;
 }
 function renderQueue() {
   $("queue").replaceChildren();
@@ -64,11 +85,15 @@ async function loadQueue(append = false) {
     if (mine !== generation) return;
     items = append ? [...items, ...result.items] : result.items;
     cursor = items.length;
-    $("count").textContent = `${result.remaining}/${result.total} ảnh còn lại`;
+    $("count").textContent = `${result.reviewed}/${result.total} ảnh đã review`;
+    $("queue-section").querySelector("summary").textContent=cfg.order==="file"?"Hàng đợi theo tên file":"Hàng đợi ưu tiên";
+    try {health=await worker({type:"API",path:`/health${cfg.batch?`?batch=${encodeURIComponent(cfg.batch)}`:""}`});}catch {health=null;}
+    $("data-kind").hidden=health?.data_purpose!=="development" && !result.model_version?.includes("fixture");
+    $("data-kind").textContent="Dữ liệu development / fixture · chưa nghiệm thu dữ liệu thật";
     $("status").textContent = result.remaining ? `Model: ${result.model_version}` : "Hết ảnh trong phiên này.";
     $("warnings").textContent = (result.warnings || []).join(" · ");
     $("more").hidden = cursor >= result.remaining;
-    renderQueue();
+    renderQueue(); actions();
     await loadStats();
   } catch (err) { error(err.message); $("status").textContent = "Chưa tải được hàng đợi."; }
   finally { loading = false; }
@@ -81,15 +106,26 @@ async function loadStats() {
 }
 async function showDetail(detail) {
   selected = detail; $("selected").hidden = false;
-  $("image-title").textContent = `#${detail.rank} · ${detail.image_id}`;
+  $("image-title").textContent = `Ảnh #${detail.rank} · ${detail.image_id}`;
+  $("model-version").textContent=`Phiên bản: ${detail.model_version}`;
+  const unscored=detail.model_version?.startsWith("manual-unscored-");
+  $("risk-score").textContent=unscored?"Chưa chấm":`${Number(detail.risk_score).toFixed(1)}/100`;
+  $("result").dataset.level=unscored?"unscored":detail.risk_score>0?"warning":"clear";
+  $("result-summary").textContent=unscored?"Chưa có kết quả QC":detail.risk_score>0?"Có dấu hiệu cần kiểm tra":"Chưa phát hiện lỗi qua các phép kiểm đang bật";
+  $("score-origin").textContent=lastRecheck?.queue_id===detail.queue_id?`Vừa chấm lại: ${lastRecheck.risk_before.toFixed(1)} → ${lastRecheck.risk_after.toFixed(1)} điểm`:"Điểm của snapshot đang phục vụ; chưa đọc lại nhãn vừa sửa.";
+  $("active-checks").textContent=health?.active_checks?.length?`Phép kiểm: ${health.active_checks.join(", ")}`:"Chưa có metadata xác minh danh sách phép kiểm.";
   $("reasons").replaceChildren(...detail.reasons.slice(0, 3).map(reasonNode));
   $("evidence").replaceChildren();
-  for (const box of detail.evidence || []) {
+  for (const [index, box] of (detail.evidence || []).entries()) {
     const li = document.createElement("li");
     const check = document.createElement("input"); check.type = "checkbox"; check.value = box.obj_id || "";
     check.style.width = "auto"; check.dataset.objId = "true";
     check.disabled = !box.obj_id;
-    li.append(check, document.createTextNode(` #${box.obj_id || "?"}: ${box.note || box.signal || "Box nghi vấn"}`));
+    const savedBox=savedSnapshot?.boxes.find(b=>String(b.obj_id)===String(box.obj_id));
+    const number=savedBox?savedSnapshot.boxes.indexOf(savedBox)+1:null;
+    const label=document.createElement("label");
+    label.append(check,document.createTextNode(`${number?`Box ${number} · ${savedBox.category}`:`Cảnh báo ${index+1}`} · ${box.note || box.signal || "Box nghi vấn"}`));
+    li.append(label);
     $("evidence").append(li);
   }
   $("image").hidden = true; $("boxes").hidden = true; $("image-error").hidden = true;
@@ -106,7 +142,7 @@ async function showDetail(detail) {
       ctx.lineWidth = Math.max(2, img.naturalWidth / 350); ctx.font = `${Math.max(14, img.naturalWidth / 70)}px sans-serif`;
       for (const evidence of detail.evidence || []) {
         const [x1, y1, x2, y2] = evidence.box;
-        ctx.strokeRect(x1, y1, x2-x1, y2-y1); ctx.fillText(`#${evidence.obj_id || "?"}`, x1, Math.max(18, y1-4));
+        ctx.strokeRect(x1, y1, x2-x1, y2-y1);
       }
     };
     img.onerror = () => { $("image-error").hidden = false; $("image-error").textContent = "Không đọc được nội dung ảnh."; };
@@ -120,7 +156,7 @@ async function selectImage(row) {
   try {
     const clock = await worker({type: "OPEN_IMAGE", imageId: row.image_id, queueId: row.queue_id});
     if (mine !== selectionGeneration) return;
-    pending = clock.pending; $("note").value = "";
+    pending = clock.pending; lastRecheck=clock.lastRecheck; $("note").value = "";
     savedSnapshot = clock.savedSnapshot; recheckPending = clock.recheckPending;
     showSaved();
     await showDetail(clock.detail); await updateClock();
@@ -135,6 +171,8 @@ async function updateClock() {
     }
     pending = clock.pending;
     savedSnapshot = clock.savedSnapshot; recheckPending = clock.recheckPending;
+    lastRecheck=clock.lastRecheck;
+    if(selected?.image_id!==clock.detail.image_id || selected?.queue_id!==clock.detail.queue_id) await showDetail(clock.detail);
     $("timer").textContent = `${clock.seconds.toFixed(1)} giây · ${pending ? "chờ lưu verdict" : recheckPending ? "chờ kiểm tra lại" : clock.running ? "đang xem CVAT" : "tạm dừng (CVAT mất focus / đổi frame)"}`;
     actions();
   } catch (err) { error(err.message); }
@@ -142,10 +180,14 @@ async function updateClock() {
 function showSaved() {
   $("saved-labels").replaceChildren();
   if (!savedSnapshot) {
-    $("saved-status").textContent = "Điểm hiện tại thuộc lần chấm trước. Đọc nhãn đã Save để kiểm tra lại.";
+    $("saved-status").textContent = lastRecheck?.queue_id===selected?.queue_id
+      ? "Đã kiểm tra nhãn được CVAT lưu. Nếu sửa tiếp: Save → bấm QC."
+      : "Điểm thuộc snapshot trước; Save trong CVAT rồi bấm QC để cập nhật.";
     return;
   }
-  $("saved-status").textContent = `Đã đọc ${savedSnapshot.box_count} box được lưu trong CVAT. ${savedSnapshot.backend_ready ? "Có thể kiểm tra lại lỗi." : "Chưa có backend QC cho queue này; điểm chưa thay đổi."}`;
+  const readiness = savedSnapshot.backend_message || (savedSnapshot.backend_ready
+    ? "Có thể kiểm tra lại lỗi." : "Chưa có backend QC cho queue này; điểm chưa thay đổi.");
+  $("saved-status").textContent = `Đã đọc ${savedSnapshot.box_count} box được lưu trong CVAT. ${readiness}`;
   for (const [index, box] of savedSnapshot.boxes.entries()) {
     const li = document.createElement("li");
     li.textContent = `Box ${index + 1} · ${box.category} · [${box.box.map(n => Number(n).toFixed(1)).join(", ")}]`;
@@ -158,16 +200,26 @@ $("read-saved").addEventListener("click", async () => {
   catch (err) { error(err.message); }
   finally { saving = false; actions(); }
 });
-$("recheck").addEventListener("click", async () => {
+async function runCheck(combined) {
+  if(saving) return;
   saving = true; actions(); renderQueue(); error("");
   try {
-    const result = await worker({type: "RECHECK"});
-    savedSnapshot = null; recheckPending = null;
-    await showDetail(result.detail); showSaved(); await loadQueue();
+    const result = await worker({type: combined?"RUN_QC":"RECHECK"});
+    lastRecheck=result.result;
+    savedSnapshot = result.savedSnapshot; recheckPending = null;
+    await loadQueue(); await showDetail(result.detail); showSaved();
     $("status").textContent = `Đã kiểm tra nhãn đã lưu: ${result.result.risk_before.toFixed(1)} → ${result.result.risk_after.toFixed(1)} điểm.`;
-  } catch (err) { error(err.message); await updateClock(); }
+  } catch (err) { error(err.message); await updateClock(); showSaved(); }
   finally { saving = false; actions(); renderQueue(); }
-});
+}
+$("recheck").addEventListener("click",()=>runCheck(false));
+$("run-qc").addEventListener("click",()=>runCheck(true));
+$("previous").onclick=()=>navigate(-1);
+$("next").onclick=()=>navigate(1);
+function navigate(delta) {
+  const at=items.findIndex(row=>row.image_id===selected?.image_id);
+  if(at>=0 && items[at+delta])selectImage(items[at+delta]);
+}
 async function submit(verdict) {
   if (saving || !selected || recheckPending) return;
   saving = true; actions(); renderQueue(); error("");
@@ -204,11 +256,12 @@ $("settings-form").addEventListener("submit", async event => {
     $("api-url").value = cfg.apiUrl; $("guideline-url").value = cfg.guidelineUrl; $("reviewer").value = cfg.reviewer;
     $("batch").value = cfg.batch; $("session").value = cfg.sessionId; $("order").value = cfg.order;
     $("settings").open = !cfg.reviewer;
+    await loadQueue();
     const clock = await worker({type: "CLOCK"});
     if (clock.active) {
-      pending = clock.pending; savedSnapshot = clock.savedSnapshot; recheckPending = clock.recheckPending;
+      pending = clock.pending; savedSnapshot = clock.savedSnapshot; recheckPending = clock.recheckPending; lastRecheck=clock.lastRecheck;
       await showDetail(clock.detail); showSaved();
     }
-    await loadQueue(); await updateClock(); setInterval(updateClock, 1000);
+    await updateClock(); setInterval(updateClock, 1000);
   } catch (err) { error(err.message); }
 })();

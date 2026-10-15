@@ -5,6 +5,7 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
+from test_recheck import fixture_backend
 from test_recheck import setup_recheck as setup_recheck
 
 from src.api.main import create_app
@@ -43,6 +44,23 @@ def verdict(**values):
         "seconds_spent": 8,
         **values,
     }
+
+
+def test_registered_pilot_keeps_queue_frozen_during_review(setup_recheck):
+    settings, _, _, cvat, _ = setup_recheck
+    settings.data_purpose = "real"  # Fixture-only registration; not a measured human pilot.
+    manifest = enroll(settings, cvat)
+    with TestClient(create_app(settings, cvat_client=cvat, recheck_backend=fixture_backend)) as client:
+        saved = client.get("/image/image-1/saved").json()
+        assert saved["backend_ready"] is False
+        assert "pilot" in saved["backend_message"]
+        response = client.post("/image/image-1/recheck", json={
+            "request_id": "pilot-recheck", "snapshot_id": saved["snapshot_id"],
+            "queue_id": saved["queue_id"],
+        })
+        assert response.status_code == 409
+        assert client.get("/model").json()["queue_id"] == manifest["queue_id"]
+        assert client.post("/verdict", json=verdict()).status_code == 200
 
 
 def test_pilot_cannot_promote_development_and_freezes_context(setup_recheck, monkeypatch, tmp_path):

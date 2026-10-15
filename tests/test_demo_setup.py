@@ -42,8 +42,11 @@ def test_demo_move_rerun_preserves_db_and_rebases_paths(tmp_path):
     assert (moved / "review.db").read_bytes() == b"user database"
     assert str(moved) in (moved / "demo.env").read_text()
     with zipfile.ZipFile(moved / "extension.zip") as archive:
-        assert set(archive.namelist()) == {"manifest.json", "background.js", "sidepanel.js",
-                                          "sidepanel.html", "sidepanel.css"}
+        manifest = json.loads(archive.read("manifest.json"))
+        assert set(archive.namelist()) == {
+            "manifest.json", "background.js", "sidepanel.js", "sidepanel.html", "sidepanel.css",
+            "content.js", "logo.svg", *manifest["icons"].values(),
+        }
     (moved / "ranked_queue.csv").write_text("edited queue")
     with pytest.raises(ValueError, match="đã đổi"):
         prepare_demo(moved)

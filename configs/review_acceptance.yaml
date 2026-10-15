@@ -1,0 +1,7 @@
+# Input identity and limits for the local review/pilot handoff; no ML policy changes.
+labels_sha256: f7cde1a3bc064b2cbd2ffbcf58b29889e7396f4a4176fd17e3d93e08dfb4ff00
+queue_version: rule-v1.2
+pilot_queue_version: rule-v1.2-goc
+review_images: 50
+pilot_images: 30
+archive_max_bytes: 536870912

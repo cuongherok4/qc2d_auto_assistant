@@ -1,6 +1,8 @@
 /* All HTTP calls and the focus-aware review clock live in the MV3 worker. */
 const DEFAULTS = {apiUrl: "http://127.0.0.1:8000", guidelineUrl: "http://127.0.0.1:8010", reviewer: "", batch: "", sessionId: "default", order: "priority"};
 let operations = Promise.resolve();
+let uiOperations = Promise.resolve();
+const panelFocus = new Map();
 const serial = (fn) => {
   const next = operations.then(fn, fn);
   operations = next.catch(() => {});
@@ -87,7 +89,7 @@ async function refreshClock() {
       const actualFrame = frameNumber(actual);
       const sameFrame = actual.origin === expected.origin && actual.pathname === expected.pathname &&
         actualFrame !== null && actualFrame === frameNumber(expected);
-      if (tab.active && win.focused && tab.status === "complete" && sameFrame) {
+      if (tab.active && win.focused && tab.status === "complete" && sameFrame && !panelFocus.get(tab.id)) {
         value.runningSince = Date.now();
       }
     } catch { /* Closed CVAT tab: clock remains paused. */ }
@@ -99,9 +101,10 @@ function publicClock(value) {
   if (!value) return {active: false};
   return {active: true, imageId: value.detail.image_id, running: value.runningSince !== null,
     seconds: value.elapsedMs / 1000, pending: value.pending, detail: value.detail,
-    savedSnapshot: value.savedSnapshot || null, recheckPending: value.recheckPending || null};
+    savedSnapshot: value.savedSnapshot || value.lastSavedSnapshot || null, recheckPending: value.recheckPending || null,
+    lastRecheck: value.lastRecheck || null};
 }
-async function openImage(message) {
+async function openImage(message, sender) {
   const old = await refreshClock();
   if (old?.pending) throw new Error("Còn verdict chưa xác nhận. Thử gửi lại trước khi đổi ảnh.");
   if (old?.recheckPending) throw new Error("Còn yêu cầu kiểm tra lại chưa xác nhận. Thử lại trước khi đổi ảnh.");
@@ -115,11 +118,16 @@ async function openImage(message) {
   if (!/^\/tasks\/\d+\/jobs\/\d+$/.test(target.pathname) || !/^\d+$/.test(target.searchParams.get("frame"))) {
     throw new Error("CVAT URL thiếu task/job/frame hợp lệ.");
   }
-  const existing = (await chrome.tabs.query({})).find(tab => {
+  const tabs = await chrome.tabs.query({});
+  const compatible = tab => {
     try { return new URL(tab.url).origin === target.origin && tab.url.includes("/tasks/"); }
     catch { return false; }
-  });
-  const tab = existing ? await chrome.tabs.update(existing.id, {url: target.href, active: true}) :
+  };
+  const matchingJob = tab => compatible(tab) && new URL(tab.url).pathname === target.pathname;
+  const existing = tabs.find(tab => tab.id === sender.tab?.id && compatible(tab)) ||
+    tabs.find(tab => tab.active && matchingJob(tab)) || tabs.find(matchingJob) || tabs.find(compatible);
+  const same = existing && new URL(existing.url).pathname === target.pathname && frameNumber(new URL(existing.url)) === frameNumber(target);
+  const tab = existing ? await chrome.tabs.update(existing.id, {...(same ? {} : {url: target.href}), active: true}) :
     await chrome.tabs.create({url: target.href, active: true});
   await chrome.windows.update(tab.windowId, {focused: true});
   await persist({tabId: tab.id, windowId: tab.windowId, cvatUrl: target.href, detail,
@@ -191,14 +199,38 @@ async function recheckImage() {
   const query = new URLSearchParams();
   if (cfg.batch) query.set("batch", cfg.batch);
   value.detail = await api(`/image/${encodeURIComponent(value.detail.image_id)}?${query}`);
+  value.lastRecheck = result;
+  value.lastSavedSnapshot = {...value.savedSnapshot, backend_ready:false,
+    backend_message:"Snapshot này đã được kiểm tra. Bấm nút QC để đọc nhãn mới nếu bạn sửa tiếp."};
   value.recheckPending = null; value.savedSnapshot = null;
   await persist(value);
-  return {result, detail: value.detail};
+  return {result, detail: value.detail, savedSnapshot:value.lastSavedSnapshot};
 }
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
+  const extensionPage = sender.url?.startsWith(chrome.runtime.getURL(''));
+  if (!extensionPage && !["UI_GET", "UI_SET", "PANEL_FOCUS"].includes(message.type)) return false;
+  if (["UI_GET", "UI_SET"].includes(message.type)) {
+    const task=uiOperations.then(async()=>{
+      if(!sender.tab)throw new Error("Thiếu tab CVAT");
+      const key=`qc-ui:${sender.tab.id}`;
+      if(message.type==='UI_GET')return (await chrome.storage.local.get(key))[key]||{open:false,width:390};
+      const value={open:message.value?.open===true,width:Math.max(300,Math.min(650,Number(message.value?.width)||390))};
+      await chrome.storage.local.set({[key]:value});return value;
+    });
+    uiOperations=task.catch(()=>{});
+    task.then(value=>sendResponse({ok:true,value}),error=>sendResponse({ok:false,error:error.message}));
+    return true;
+  }
   serial(async () => {
     switch (message.type) {
+      case "PANEL_FOCUS": {
+        if (!sender.tab) throw new Error("Thiếu tab CVAT");
+        const value=await state();
+        if(value?.tabId===sender.tab.id) {accrue(value);await persist(value);}
+        panelFocus.set(sender.tab.id,message.focused===true);
+        return publicClock(await refreshClock());
+      }
       case "SETTINGS": return settings();
       case "SAVE_SETTINGS": {
         localUrl(message.settings.apiUrl);
@@ -212,11 +244,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "API": return api(message.path, "GET");
       case "OPEN_GUIDELINE": return openGuideline();
-      case "OPEN_IMAGE": return openImage(message);
+      case "OPEN_IMAGE": return openImage(message, sender);
       case "CLOCK": return publicClock(await refreshClock());
       case "SAVE_VERDICT": return saveVerdict(message);
       case "READ_SAVED": return readSaved();
       case "RECHECK": return recheckImage();
+      case "RUN_QC": {
+        const current=await state();
+        if (!current?.recheckPending) {
+          const saved=await readSaved();
+          if(!saved.backend_ready) throw new Error(saved.backend_message || "Chưa có backend QC; điểm cũ được giữ.");
+        }
+        return recheckImage();
+      }
       default: throw new Error("Thao tác không hỗ trợ.");
     }
   }).then(value => sendResponse({ok: true, value}), error => sendResponse({ok: false, error: error.message}));
@@ -225,10 +265,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 const refresh = () => serial(refreshClock).catch(() => {});
 chrome.tabs.onActivated.addListener(refresh);
 chrome.tabs.onUpdated.addListener(refresh);
-chrome.tabs.onRemoved.addListener(refresh);
+chrome.tabs.onRemoved.addListener(id => {panelFocus.delete(id);chrome.storage.local.remove(`qc-ui:${id}`);refresh();});
 chrome.windows.onFocusChanged.addListener(refresh);
 chrome.runtime.onStartup.addListener(() => serial(async () => {
   const value = await state();
   if (value) { value.runningSince = null; await persist(value); }
 }));
-chrome.sidePanel.setPanelBehavior({openPanelOnActionClick: true}).catch(() => {});
+chrome.action.onClicked.addListener(tab => {
+  if (!tab.id) return;
+  chrome.tabs.sendMessage(tab.id,{type:'QC_TOGGLE'}).then(reply=>{
+    if(!reply?.ok)throw new Error('Không phải job CVAT');
+    chrome.action.setBadgeText({tabId:tab.id,text:''});
+    chrome.action.setTitle({tabId:tab.id,title:'Mở/đóng QC'});
+  }).catch(() => {
+    chrome.action.setBadgeText({tabId:tab.id,text:'!'});
+    chrome.action.setTitle({tabId:tab.id,title:'Mở một job CVAT rồi bấm QC; reload trang sau khi reload extension.'});
+  });
+});

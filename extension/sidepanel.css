@@ -1,17 +1,10 @@
-:root { color-scheme: light; font: 14px/1.5 system-ui, sans-serif; color: #172738; background: #f7f9fc; }
-body { margin: 12px; } h1 { font-size: 18px; margin: 0; } h2 { font-size: 15px; margin: 10px 0; }
-header, .queue-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-button { cursor: pointer; border: 1px solid #b0c1d4; border-radius: 5px; padding: 8px; background: white; color: inherit; }
-button:hover { border-color: #1769aa; } button:disabled { opacity: .5; cursor: wait; }
-input, select, textarea { box-sizing: border-box; width: 100%; padding: 7px; border: 1px solid #a9bacb; border-radius: 4px; font: inherit; }
-label { display: block; margin: 8px 0; } details { padding: 8px 0; } summary { cursor: pointer; }
-#status { color: #24517d; } #error { background: #fff0ef; color: #9f2424; padding: 9px; white-space: pre-wrap; }
-#warnings, .hint { color: #62523d; font-size: 12px; } #queue { padding: 0; list-style: none; }
-#queue > li { margin: 8px 0; } .row { width: 100%; text-align: left; padding: 10px; }
-.row.active { border: 2px solid #1769aa; } .rank { font-weight: 700; } .row ul { padding-left: 18px; margin-bottom: 0; }
-#selected { border: 1px solid #b0c1d4; background: #fff; border-radius: 6px; padding: 10px; }
-#preview { position: relative; } #image { display: block; width: 100%; height: auto; }
-#boxes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-#actions { display: flex; gap: 5px; } #actions button { flex: 1; font-weight: 650; }
-#timer { font-variant-numeric: tabular-nums; } #retry { border-color: #9f2424; margin-top: 6px; }
-[hidden] { display: none !important; }
+:root {color-scheme:light;font:13px/1.5 system-ui,sans-serif;color:#253347;background:#f5f7fa}
+* {box-sizing:border-box} body {margin:0} header {position:sticky;top:0;display:flex;align-items:center;gap:10px;background:white;border-bottom:1px solid #dce3ec;padding:12px;z-index:2}
+h1 {font-size:17px;margin:0} h1 span {font-size:11px;background:#eaf1ff;color:#2365cc;padding:3px 6px;border-radius:4px} header>div {flex:1} header small,.muted {color:#67768b;font-size:11px} .logo {width:38px;height:38px;border-radius:9px} main {padding:12px} h2 {font-size:14px;margin:0;overflow-wrap:anywhere} h3 {font-size:13px;margin:0}
+button {cursor:pointer;border:1px solid #d4deea;border-radius:7px;padding:8px 10px;background:white;color:inherit;font:inherit} button:hover {background:#edf3ff;border-color:#7ba4e8} button:disabled {opacity:.5;cursor:not-allowed} input,select,textarea {width:100%;padding:8px;border:1px solid #cbd6e4;border-radius:6px;font:inherit} label {display:block;margin:8px 0}
+.primary {background:#2468db;color:white;border-color:#2468db;font-weight:650} .primary:hover {background:#1957bd;color:white} .main-action {width:100%;margin-top:12px;padding:11px;font-size:14px}
+.session-heading,nav,.result-heading {display:flex;align-items:center;justify-content:space-between;gap:8px} .session-heading {color:#67768b;font-size:12px} #refresh {padding:4px 7px;font-size:11px} #status {font-size:12px;color:#2360a7} #error {background:#fff0ef;color:#a42c27;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:7px} #warnings,.hint {color:#796947;font-size:11px} .hint {margin:6px 0 12px}
+#selected {background:white;border:1px solid #dce3ec;border-radius:10px;padding:12px} #model-version {overflow-wrap:anywhere;margin:3px 0} #result {border:1px solid #e0e7ef;border-left:4px solid #e7a82e;border-radius:7px;padding:10px;margin:12px 0} #result[data-level=clear] {border-left-color:#36a178} #result[data-level=unscored] {border-left-color:#95a1b2} #risk-score {font-size:17px;white-space:nowrap} #result-summary {font-weight:600;margin:6px 0} #score-origin,#active-checks {margin:4px 0}
+#reasons,#evidence,#saved-labels {padding-left:18px;margin:6px 0;overflow-wrap:anywhere} #evidence {list-style:none;padding:0} #evidence li {border-top:1px solid #edf0f4;padding:7px 0} #evidence label {display:flex;align-items:flex-start;gap:6px} #evidence input {flex:none;margin-top:4px} #saved-status {font-size:11px;color:#62728a} #actions {display:flex;gap:5px} #actions button {flex:1;padding:9px 3px;font-size:11px;font-weight:650} #actions button:first-child {background:#fff5e8;border-color:#eec489} #timer {font-size:11px;color:#67768b;font-variant-numeric:tabular-nums} #retry {border-color:#a42c27;margin-top:8px}
+details {margin:8px 0;border-top:1px solid #e0e6ef;padding-top:9px} summary {cursor:pointer;font-weight:600;color:#41536b} #settings[open] {background:white;padding:10px;border:1px solid #dce3ec;border-radius:8px} #queue {list-style:none;padding:0;margin:8px 0} #queue>li {margin:6px 0} .row {width:100%;text-align:left;padding:9px;background:white} .row.active {border-color:#2468db;background:#edf4ff} .rank {font-size:12px;font-weight:650} .row ul {font-size:11px;color:#67768b;margin:4px 0 0;padding-left:16px} #preview {position:relative;margin-top:8px} #image {display:block;width:100%;height:auto} #boxes {position:absolute;inset:0;width:100%;height:100%;pointer-events:none} nav {margin-top:10px} nav button {flex:1} .badge {background:#fff4da;color:#81591e;border:1px solid #efd59c;border-radius:6px;padding:6px;font-size:11px}
+[hidden] {display:none!important}
