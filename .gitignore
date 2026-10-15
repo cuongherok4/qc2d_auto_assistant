@@ -35,3 +35,7 @@ reports/_det20/
 .pytest_cache/
 .ruff_cache/
 configs/guidelines/drafts/
+
+# Gói/khoá ký extension tạo bằng Chrome "Pack extension"
+*.crx
+*.pem
