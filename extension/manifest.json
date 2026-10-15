@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "M13 Review Queue",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Review QC 2D theo hàng đợi, mở CVAT và lưu verdict.",
   "permissions": ["storage", "tabs"],
   "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],

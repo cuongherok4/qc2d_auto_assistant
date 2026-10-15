@@ -40,3 +40,19 @@ def test_image_detail_schema_keeps_severity():
     from src.api.schemas import Evidence
 
     assert Evidence(box=[0, 0, 1, 1], severity="error").model_dump()["severity"] == "error"
+
+
+def test_issue_names_each_error():
+    out = annotate([_box(None, "model: car 0.94", "model_missing_label"),
+                    _box("26", "nhãn: bus", "model_class_conflict"),
+                    _box(None, "model: truck 0.85", "model_class_conflict"),
+                    {"obj_id": "48", "box": [0, 0, 10, 10], "note": "nhãn", "signal": "model_loose_box"},
+                    {"obj_id": None, "box": [0, 0, 10, 5], "note": "model: car 0.70",
+                     "signal": "model_loose_box"},
+                    _box("50", "không có dự đoán", "label_unsupported")], POLICY)
+    assert [b["issue"] for b in out] == [
+        "Thiếu nhãn car (model 0.94)", "Sai class: nhãn bus → model truck (0.85)",
+        "Box model: truck 0.85",
+        "Box lệch: IoU 0.50 so với model car", "Box model: car 0.70",
+        "Box thừa? Model không thấy vật nào ở đây"]
+    assert [b["secondary"] for b in out] == [False, False, True, False, True, False]

@@ -40,6 +40,7 @@
     layer.dataset.key = key;
     layer.replaceChildren();
     const px = n => n / g.scale;
+    const tags = [];
     (detail.evidence || []).forEach((ev, i) => {
       const [x1, y1, x2, y2] = ev.box, color = COLORS[ev.severity] || COLORS.review, hi = i === focused;
       const x = x1 + g.x, y = y1 + g.y;
@@ -49,14 +50,29 @@
         // Box nét đứt: dự đoán của model, không có object tương ứng trong CVAT.
         'stroke-dasharray': ev.obj_id == null ? `${px(9)} ${px(5)}` : 'none',
       }));
+      // Box model đi kèm box nhãn chỉ ghi số; tên lỗi nằm ở box nhãn để khỏi chồng chữ.
+      const text = ev.secondary || !ev.issue ? String(i + 1) : `${i + 1}. ${ev.issue}`;
+      const size = px(hi ? 15 : 12), above = y1 > 20;
+      // Số của box model đặt ở góc dưới-phải để không đè lên nhãn tên lỗi của box nhãn đi kèm.
+      const at = ev.secondary ? {x: x2 + g.x - px(14), y: y2 + g.y + size + px(3)}
+        : {x: x + px(4), y: above ? y - px(5) : y + size + px(3)};
       const tag = set(document.createElementNS(NS, 'text'), {
-        x: x + px(2), y: y - px(4), fill: color, 'font-size': px(hi ? 18 : 14), 'font-weight': 700,
-        'font-family': 'system-ui, sans-serif', stroke: '#000', 'stroke-width': px(3), 'paint-order': 'stroke',
+        ...at, 'font-size': size, 'font-weight': 700,
+        'font-family': 'system-ui, sans-serif', fill: ev.severity === 'error' ? '#fff' : '#111',
       });
-      tag.textContent = String(i + 1);
-      layer.append(tag);
+      tag.textContent = text;
+      tags.push({tag, color, hi});
     });
     svg.append(layer);
+    // Nền màu sau chữ: cần đo chữ sau khi đã gắn vào DOM.
+    for (const {tag, color, hi} of tags) {
+      layer.append(tag);
+      const box = tag.getBBox();
+      layer.insertBefore(set(document.createElementNS(NS, 'rect'), {
+        x: box.x - px(3), y: box.y - px(1), width: box.width + px(6), height: box.height + px(2),
+        rx: px(3), fill: color, 'fill-opacity': hi ? 1 : 0.9, stroke: hi ? '#000' : 'none', 'stroke-width': px(1.5),
+      }), tag);
+    }
   }
 
   // Chọn sẵn object CVAT trùng box nhãn: CVAT kích hoạt object khi rê chuột vào dòng sidebar.

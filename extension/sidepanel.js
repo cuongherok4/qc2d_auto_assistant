@@ -126,7 +126,7 @@ async function showDetail(detail) {
     const label=document.createElement("label");
     const chip=document.createElement("span"); chip.className=`chip ${box.severity==="error"?"error":"review"}`;
     chip.textContent=`${index+1}`; chip.title=box.severity==="error"?"Chắc chắn lỗi":"Cần review";
-    label.append(check,chip,document.createTextNode(`${number?`Box ${number} · ${savedBox.category}`:box.severity==="error"?"Lỗi":"Cần review"} · ${box.note || box.signal || "Box nghi vấn"}`));
+    label.append(check,chip,document.createTextNode(`${number?`Box ${number} · ${savedBox.category}`:box.severity==="error"?"Lỗi":"Cần review"} · ${box.issue || box.note || box.signal || "Box nghi vấn"}`));
     const view=document.createElement("button"); view.type="button"; view.className="view-box"; view.textContent="Xem";
     view.title="Hiện box này trên CVAT"; view.hidden=!embedded;
     view.onclick=()=>hostMessage("QC_FOCUS_BOX",{index});

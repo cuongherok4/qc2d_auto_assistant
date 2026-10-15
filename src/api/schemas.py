@@ -13,6 +13,8 @@ class Evidence(BaseModel):
     note: str = ""
     signal: str | None = None
     severity: Literal["error", "review"] = "review"  # màu box: đỏ / vàng
+    issue: str = ""  # tên lỗi ngắn cho reviewer
+    secondary: bool = False  # box model đi kèm box nhãn ngay trước
 
 
 class CvatTarget(BaseModel):
