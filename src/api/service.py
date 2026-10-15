@@ -15,6 +15,7 @@ import pandas as pd
 from fastapi import HTTPException
 
 from src import config, contracts
+from src.api.box_severity import annotate
 from src.api.settings import Settings
 from src.api.store import ReviewStore
 
@@ -199,7 +200,7 @@ class QueueService:
             "queue_id": queue_id,
             "batch_id": batch,
             "reasons": [r for r in str(row["top_reasons"]).split(contracts.REASON_SEP) if r],
-            "evidence": boxes.get(image_id, []),
+            "evidence": annotate(boxes.get(image_id, []), self.settings.box_severity),
             "cvat_url": url,
             "cvat": target,
             "image_url": f"/image/{image_id}/file",

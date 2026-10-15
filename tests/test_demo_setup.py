@@ -45,7 +45,7 @@ def test_demo_move_rerun_preserves_db_and_rebases_paths(tmp_path):
         manifest = json.loads(archive.read("manifest.json"))
         assert set(archive.namelist()) == {
             "manifest.json", "background.js", "sidepanel.js", "sidepanel.html", "sidepanel.css",
-            "content.js", "logo.svg", *manifest["icons"].values(),
+            "content.js", "overlay.js", "logo.svg", *manifest["icons"].values(),
         }
     (moved / "ranked_queue.csv").write_text("edited queue")
     with pytest.raises(ValueError, match="đã đổi"):

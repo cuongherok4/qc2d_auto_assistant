@@ -12,6 +12,7 @@ class Evidence(BaseModel):
     box: list[float] = Field(min_length=4, max_length=4)
     note: str = ""
     signal: str | None = None
+    severity: Literal["error", "review"] = "review"  # màu box: đỏ / vàng
 
 
 class CvatTarget(BaseModel):

@@ -124,8 +124,13 @@ async function showDetail(detail) {
     const savedBox=savedSnapshot?.boxes.find(b=>String(b.obj_id)===String(box.obj_id));
     const number=savedBox?savedSnapshot.boxes.indexOf(savedBox)+1:null;
     const label=document.createElement("label");
-    label.append(check,document.createTextNode(`${number?`Box ${number} · ${savedBox.category}`:`Cảnh báo ${index+1}`} · ${box.note || box.signal || "Box nghi vấn"}`));
-    li.append(label);
+    const chip=document.createElement("span"); chip.className=`chip ${box.severity==="error"?"error":"review"}`;
+    chip.textContent=`${index+1}`; chip.title=box.severity==="error"?"Chắc chắn lỗi":"Cần review";
+    label.append(check,chip,document.createTextNode(`${number?`Box ${number} · ${savedBox.category}`:box.severity==="error"?"Lỗi":"Cần review"} · ${box.note || box.signal || "Box nghi vấn"}`));
+    const view=document.createElement("button"); view.type="button"; view.className="view-box"; view.textContent="Xem";
+    view.title="Hiện box này trên CVAT"; view.hidden=!embedded;
+    view.onclick=()=>hostMessage("QC_FOCUS_BOX",{index});
+    li.append(label,view);
     $("evidence").append(li);
   }
   $("image").hidden = true; $("boxes").hidden = true; $("image-error").hidden = true;
@@ -138,11 +143,14 @@ async function showDetail(detail) {
       img.hidden = false;
       const canvas = $("boxes"); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
       canvas.hidden = false;
-      const ctx = canvas.getContext("2d"); ctx.strokeStyle = "#ff3b30"; ctx.fillStyle = "#ff3b30";
+      const ctx = canvas.getContext("2d");
       ctx.lineWidth = Math.max(2, img.naturalWidth / 350); ctx.font = `${Math.max(14, img.naturalWidth / 70)}px sans-serif`;
-      for (const evidence of detail.evidence || []) {
+      for (const [index, evidence] of (detail.evidence || []).entries()) {
         const [x1, y1, x2, y2] = evidence.box;
+        ctx.strokeStyle = ctx.fillStyle = evidence.severity === "error" ? "#ff1f1f" : "#ffd000";
+        ctx.setLineDash(evidence.obj_id == null ? [9, 5] : []);
         ctx.strokeRect(x1, y1, x2-x1, y2-y1);
+        ctx.fillText(String(index + 1), x1 + 2, Math.max(14, y1 - 4));
       }
     };
     img.onerror = () => { $("image-error").hidden = false; $("image-error").textContent = "Không đọc được nội dung ảnh."; };

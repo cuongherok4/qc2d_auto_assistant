@@ -17,3 +17,7 @@ recheck_backend: src.pipeline:recheck # chấm lại rule từ nhãn đã Save; 
 snapshot_dir: data/cvat-snapshots
 recheck_dir: data/rechecks
 data_purpose: development # Chỉ đặt real khi dùng dữ liệu thật đã xác minh; pilot kiểm trường này.
+box_severity: # Màu box trong CVAT: error = đỏ (chắc chắn lỗi), còn lại = vàng (cần review)
+  error_signals: [guideline] # luật guideline đã duyệt: luôn đỏ
+  error_conf_signals: [model_missing_label, model_class_conflict] # đỏ khi conf model >= error_conf
+  error_conf: 0.85

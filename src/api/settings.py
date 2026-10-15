@@ -34,6 +34,7 @@ class Settings:
     snapshot_dir: str = "data/cvat-snapshots"
     recheck_dir: str = "data/rechecks"
     data_purpose: str = "development"
+    box_severity: dict = field(default_factory=dict)
 
     @classmethod
     def configured(cls) -> Settings:

@@ -48,6 +48,7 @@
   window.addEventListener('message',event=>{
     if(event.source!==iframe.contentWindow||event.origin!==chrome.runtime.getURL('').slice(0,-1)) return;
     if(event.data?.type==='QC_CLOSE') setOpen(false);
+    if(event.data?.type==='QC_FOCUS_BOX'&&Number.isInteger(event.data.index)) globalThis.m13Overlay?.focus(event.data.index);
     if(event.data?.type==='QC_FOCUS') send({type:'PANEL_FOCUS',focused:Boolean(event.data.focused)&&ui.open&&valid()});
   });
   document.addEventListener('pointerdown',event=>{
